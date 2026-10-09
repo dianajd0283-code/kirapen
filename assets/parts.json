@@ -1,0 +1,19 @@
+{
+  "note": "キャラのパーツ一覧。画像は 600x732 の透明PNG/WebP。slots は描く順番（下から上）。items に1行足すと着せ替えに出ます。recolor:true のパーツは色を選べます。",
+  "size": [600, 732],
+  "base": "assets/char/base.webp",
+  "slots": [
+    { "id": "bottom", "name": "ボトムス", "optional": true, "recolor": true, "items": [] },
+    { "id": "shoes", "name": "くつ", "optional": true, "recolor": true, "items": [] },
+    { "id": "top", "name": "トップス", "optional": true, "recolor": true, "items": [] },
+    { "id": "hold", "name": "持ち物", "optional": true, "recolor": true, "items": [] },
+    { "id": "hair", "name": "髪型", "optional": false, "recolor": true, "palette": "hair", "items": [
+      { "id": "bob", "name": "ボブ", "src": "assets/char/hair/bob.webp" },
+      { "id": "wave", "name": "ウェーブ", "src": "assets/char/hair/wave.webp" },
+      { "id": "long", "name": "ロング", "src": "assets/char/hair/long.webp" },
+      { "id": "twin", "name": "ツイン", "src": "assets/char/hair/twin.webp" }
+    ] },
+    { "id": "acc", "name": "アクセ", "optional": true, "recolor": true, "items": [] }
+  ],
+  "room": {}
+}

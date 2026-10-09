@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>キラペン</title>
+<meta name="description" content="キャラと推し部屋をつくって、推し色にかざる推し活アプリ">
+<meta name="theme-color" content="#D6246E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="キラペン">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app" id="app"><p class="muted">読み込み中…</p></div>
+<nav class="nav" id="nav" hidden>
+  <div class="nav-in">
+    <button type="button" data-act="tab" data-v="room" id="nav-room"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/><path d="M12 17.5s-3-1.8-3-4a1.6 1.6 0 013-.9 1.6 1.6 0 013 .9c0 2.2-3 4-3 4z"/></svg>My Room</button>
+    <button type="button" data-act="tab" data-v="money" id="nav-money"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="13" rx="8" ry="6"/><path d="M10 7h4M7 18v2M17 18v2"/></svg>貯金箱</button>
+    <button type="button" data-act="tab" data-v="settings" id="nav-settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-7 8-7s7 2.5 8 7"/></svg>着せ替え・推し</button>
+  </div>
+</nav>
+<div id="layer"></div>
+<div id="toast" class="toast" hidden></div>
+<script>window.KIRAPEN_PARTS=null;</script>
+<script src="js/app.js"></script>
+</body>
+</html>
