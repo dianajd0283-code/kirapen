@@ -121,7 +121,7 @@ function stateFromServer(sv){
   return fixState({v:1,onboarded:true,me:p.me||defMe(),oshis:p.oshis||[],room:p.room||newState().room,money:q.money||{budget:25000,records:[]}});
 }
 var S=load()||newState();
-var UI={authMode:'in',authEmail:'',authPw:'',authBusy:false,conflict:null,tab:'room',step:1,deco:false,sel:null,pane:'items',month:0,sheet:null,recAmount:'',recMemo:'',recDate:todayStr(),recCat:'goods',recOshi:'',del:null,budgetEdit:false,reset:false,oshiDraft:'',oshiColor:COLORS[0],shareURL:null,backup:null,restoreText:''};
+var UI={authMode:'in',authEmail:'',authPw:'',authBusy:false,conflict:null,tab:'room',step:0,deco:false,sel:null,pane:'items',month:0,sheet:null,recAmount:'',recMemo:'',recDate:todayStr(),recCat:'goods',recOshi:'',del:null,budgetEdit:false,reset:false,oshiDraft:'',oshiColor:COLORS[0],shareURL:null,backup:null,restoreText:''};
 var toastT;
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true;},2200);}
 
@@ -176,12 +176,21 @@ function charEditor(){
 }
 
 /* ================= Views ================= */
+function vWelcome(){
+  var ic=function(d){return '<span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg></span>';};
+  var h='<div class="welcome"><div class="stage">'+illustHTML(S.me,'ill-lg')+'</div>';
+  h+='<div class="stack" style="gap:6px"><span class="tag" style="align-self:flex-start">キラペン</span><h1 class="welcome-title">わたしの部屋を、<br>推し色に。</h1></div>';
+  h+='<ul class="welcome-points"><li>'+ic('<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-7 8-7s7 2.5 8 7"/>')+'自分のキャラをつくって着せ替え</li><li>'+ic('<path d="M4 11l8-7 8 7v9H4z"/>')+'推し色の家具で、My Roomをかざる</li><li>'+ic('<ellipse cx="12" cy="13" rx="8" ry="6"/><path d="M10 7h4"/>')+'推し活に使ったお金を貯金箱に記録</li></ul>';
+  h+='<button class="btn primary block" type="button" data-act="onb-start" style="min-height:54px;font-size:16px">はじめる</button>';
+  if(cloudOn())h+='<button class="btn block" type="button" data-act="auth-open">ログインして続きから</button>';
+  return h+'</div>';
+}
 function vOnboard(){
+  if(UI.step===0)return vWelcome();
   var h='<div class="row" style="gap:12px">';
-  if(UI.step>1)h+='<button class="btn sm" type="button" data-act="onb-back">戻る</button>';
+  h+='<button class="btn sm" type="button" data-act="onb-back">戻る</button>';
   h+='<div class="progress" style="flex:1"><i class="on"></i><i class="'+(UI.step>=2?'on':'')+'"></i><i class="'+(UI.step>=3?'on':'')+'"></i></div><span class="small muted num">'+UI.step+' / 3</span></div>';
   if(UI.step===1){
-    if(cloudOn()&&!cloudUser())h+='<div class="banner"><span>前に使っていた人は、ログインすると続きから使えます</span><button class="mini" type="button" data-act="auth-open">ログイン</button></div>';
     h+='<div class="stack" style="gap:4px"><span class="tag" style="align-self:flex-start">キラペンへようこそ</span><h1>あなたのキャラをつくろう</h1><p class="muted small" style="margin:0">My Roomの主人公になります。あとから着せ替えできます。</p></div>';
     h+=charEditor()+'<label class="field"><span>ニックネーム</span><input class="input" id="onb-name" maxlength="12" placeholder="例：みつき" value="'+esc(S.me.name)+'"></label><button class="btn primary block" type="button" data-act="onb-next">次へ</button>';
   }else if(UI.step===2){
@@ -366,7 +375,8 @@ function act(a,d){
     case 'layer':if(!v&&SLOT[d.k]&&!SLOT[d.k].optional)return;S.me.layers[d.k]=v||null;save();render();break;
     case 'lcolor':S.me.colors[d.k]=v;save();render();break;
     case 'onb-next':if(UI.step===1&&!S.me.name.trim()){toast('ニックネームを入れてね');return;}UI.step=Math.min(3,UI.step+1);if(UI.step===3&&S.oshis[0]){var oc=S.oshis[0].color;['garland','penlight','frame','rug','nui','uchiwa'].forEach(function(id){S.room.items[id].color=oc;});S.room.items.bed.color=tint(oc,.5);S.room.items.window.color=tint(oc,.55);}render();window.scrollTo(0,0);break;
-    case 'onb-back':UI.step=Math.max(1,UI.step-1);render();break;
+    case 'onb-back':UI.step=Math.max(0,UI.step-1);render();window.scrollTo(0,0);break;
+    case 'onb-start':UI.step=1;render();window.scrollTo(0,0);break;
     case 'finish':S.onboarded=true;seedExamples();save();UI.tab='room';render();window.scrollTo(0,0);break;
     case 'oshi-color':UI.oshiColor=v;render();break;
     case 'oshi-add':addOshi();break;
@@ -408,7 +418,7 @@ function act(a,d){
     case 'leave-visit':VISIT=null;try{history.replaceState(null,'',location.pathname);}catch(e){}render();window.scrollTo(0,0);break;
     case 'reset-ask':UI.reset=true;render();break;
     case 'reset-no':UI.reset=false;render();break;
-    case 'reset-yes':S=newState();save();UI.reset=false;UI.step=1;UI.tab='room';render();window.scrollTo(0,0);break;
+    case 'reset-yes':S=newState();save();UI.reset=false;UI.step=0;UI.tab='room';render();window.scrollTo(0,0);break;
   }
 }
 document.addEventListener('click',function(e){
@@ -518,9 +528,18 @@ function boot(p){
   }
   if(window.KC&&window.KC.onChange)window.KC.onChange(function(){if(window.KC.justSignedIn){window.KC.justSignedIn=false;syncAfterLogin();}else render();});
   render();
+  /* スプラッシュ：キャラの画像とログイン状態がそろうまで（最短0.9秒、最長4秒） */
+  var srcs=layers(S.me),left=srcs.length,imgsDone=false;
+  srcs.forEach(function(s){loadImg(s,function(){if(--left<=0)imgsDone=true;});});
+  if(!srcs.length)imgsDone=true;
+  var t0=Date.now(),tick=setInterval(function(){
+    var cloudReady=!window.KC||window.KC.loaded;
+    if((imgsDone&&cloudReady&&Date.now()-t0>900)||Date.now()-t0>4000){clearInterval(tick);hideSplash();}
+  },100);
 }
+function hideSplash(){var sp=document.getElementById('splash');if(!sp)return;sp.classList.add('done');setTimeout(function(){sp.classList.add('hide');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},500);},350);}
 if(window.KIRAPEN_PARTS)boot(window.KIRAPEN_PARTS);
-else fetch('assets/parts.json',{cache:'no-cache'}).then(function(r){return r.json();}).then(boot).catch(function(){document.getElementById('app').innerHTML='<div class="card"><b>読み込みに失敗しました</b><p class="small muted">通信のよい場所で、もう一度開いてみてね。</p></div>';});
+else fetch('assets/parts.json',{cache:'no-cache'}).then(function(r){return r.json();}).then(boot).catch(function(){hideSplash();document.getElementById('app').innerHTML='<div class="card"><b>読み込みに失敗しました</b><p class="small muted">通信のよい場所で、もう一度開いてみてね。</p></div>';});
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.KIRAPEN_PARTS){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 })();

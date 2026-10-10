@@ -133,3 +133,29 @@ textarea.input{height:120px;padding:12px 14px;font-family:ui-monospace,Menlo,mon
 .soon span{font-size:11px;padding:3px 10px;border-radius:10px;border:1px dashed var(--line);color:var(--muted)}
 
 .mini{white-space:nowrap;flex-shrink:0}
+
+/* Splash (brand screen, same look in light and dark) */
+#splash{position:fixed;inset:0;z-index:50;background:#D6246E;color:#FFFFFF;display:flex;align-items:center;justify-content:center;transition:opacity .45s ease,visibility .45s ease}
+#splash.hide{opacity:0;visibility:hidden}
+.splash-in{display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 24px}
+.splash-name{font-family:var(--font-display);font-weight:700;font-size:40px;letter-spacing:.08em;line-height:1.2}
+.splash-tag{font-size:14px;opacity:.9;letter-spacing:.04em}
+.splash-bar{width:160px;height:6px;border-radius:3px;background:rgba(255,255,255,.28);overflow:hidden;margin-top:18px}
+.splash-bar i{display:block;height:100%;width:30%;border-radius:3px;background:#FFFFFF;transition:width .35s ease}
+#splash.done .splash-bar i{width:100%}
+@media (prefers-reduced-motion: no-preference){
+  .splash-logo{animation:twinkle 1.6s ease-in-out infinite}
+  @keyframes twinkle{50%{transform:translateY(-6px) rotate(-4deg)}}
+  .splash-bar i{animation:load 2.4s ease-out forwards}
+  #splash.done .splash-bar i{animation:none}
+  @keyframes load{from{width:8%}to{width:88%}}
+}
+
+/* Welcome */
+.welcome{display:flex;flex-direction:column;gap:16px;padding-top:8px}
+.welcome .stage{height:300px}
+.welcome .ill-lg{width:210px}
+.welcome-title{font-family:var(--font-display);font-weight:700;font-size:30px;line-height:1.3;margin:0}
+.welcome-points{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.welcome-points li{display:flex;gap:10px;align-items:center;font-size:14px}
+.welcome-points li span{width:28px;height:28px;border-radius:14px;background:var(--soft);color:var(--soft-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:12px}
