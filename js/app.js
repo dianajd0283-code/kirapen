@@ -30,7 +30,14 @@ function monthKey(off){var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+off
 var STAR='M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z';
 var HEART='M12 21s-9-5.6-9-12a5 5 0 019-3 5 5 0 019 3c0 6.4-9 12-9 12z';
 var O=' stroke="#3C2A3E" stroke-opacity=".2" stroke-width="1.5"';
-var counter=0;
+var counter=0,PHOTO=null,VISIT=null;
+function cloudOn(){return !!(window.KC&&window.KC.ready);}
+function cloudUser(){return cloudOn()&&window.KC.user?window.KC.user:null;}
+function roomLink(){var u=cloudUser();return u?location.origin+location.pathname+'?room='+u.id:'';}
+function copyText(text,inputId){
+  var sel=function(){var el=inputId&&document.getElementById(inputId);if(el){el.select();toast('文字を選んだので、コピーしてね');}else toast('コピーできませんでした');};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){toast('コピーしました');},sel);else sel();
+}
 
 /* ================= Parts (character art) ================= */
 var PARTS=null,SLOT={};
@@ -75,7 +82,7 @@ var ITEMS={
   window:{name:'窓',w:96,h:92,rc:1,def:{x:22,y:62,color:'#F7B8CF',on:true},draw:function(c){return '<rect x="6" y="4" width="84" height="78" rx="6" fill="#FFFFFF"'+O+'/><rect x="12" y="10" width="72" height="66" rx="3" fill="#BFE0F5"/><circle cx="66" cy="27" r="8" fill="#FFF3B0"/><ellipse cx="32" cy="44" rx="12" ry="6" fill="#FFFFFF"/><ellipse cx="40" cy="40" rx="8" ry="6" fill="#FFFFFF"/><path d="M48 10 V76 M12 43 H84" stroke="#FFFFFF" stroke-width="3"/><path d="M0 2 H24 Q18 44 28 90 H4 Q9 44 0 2Z" fill="'+c+'"'+O+'/><path d="M96 2 H72 Q78 44 68 90 H92 Q87 44 96 2Z" fill="'+c+'"'+O+'/><circle cx="18" cy="56" r="3" fill="'+shade(c,.2)+'"/><circle cx="78" cy="56" r="3" fill="'+shade(c,.2)+'"/><rect x="-2" y="-2" width="100" height="6" rx="3" fill="#B98C66"/>';}},
   garland:{name:'ガーランド',w:310,h:46,rc:1,def:{x:25,y:12,color:'#D6246E',on:true},draw:function(c){var s='<path d="M0 6 Q155 34 310 6" stroke="#B98C66" stroke-width="2" fill="none"/>';for(var i=0;i<8;i++){var x0=6+i*38,x1=x0+28,y0=yq(x0,6,56),y1=yq(x1,6,56),xm=(x0+x1)/2,ym=(y0+y1)/2+24;s+='<path d="M'+x0+' '+y0+' L'+x1+' '+y1+' L'+xm+' '+ym+' Z" fill="'+[c,'#FFFFFF',tint(c,.5)][i%3]+'"'+O+'/>';}return s;}},
   lights:{name:'ライト',w:300,h:40,rc:1,def:{x:30,y:6,color:'#D6246E',on:false},draw:function(c){var s='<path d="M0 4 Q150 30 300 4" stroke="#7A6A5E" stroke-width="1.6" fill="none"/>';for(var i=0;i<8;i++){var x=18+i*37,y=4+52*(x/300)*(1-x/300),f=[c,'#FFD86B',tint(c,.45)][i%3];s+='<circle cx="'+x+'" cy="'+(y+10)+'" r="9" fill="'+f+'" opacity=".25"/><rect x="'+(x-2.5)+'" y="'+(y+1)+'" width="5" height="4" rx="1" fill="#5B5162"/><ellipse cx="'+x+'" cy="'+(y+10)+'" rx="4.6" ry="6" fill="'+f+'"/>';}return s;}},
-  frame:{name:'写真フレーム',w:84,h:100,rc:1,def:{x:138,y:64,color:'#D6246E',on:true},draw:function(c,u){var s='<rect width="84" height="100" rx="4" fill="'+c+'"'+O+'/><rect x="6" y="6" width="72" height="88" rx="2" fill="#FFFFFF"/>';if(S&&S.room.photo){s+='<clipPath id="fc'+u+'"><rect x="11" y="11" width="62" height="78"/></clipPath><image href="'+S.room.photo+'" x="11" y="11" width="62" height="78" preserveAspectRatio="xMidYMid slice" clip-path="url(#fc'+u+')"/>';}else{s+='<rect x="11" y="11" width="62" height="78" fill="#F3EEE8"/><path d="M15 80 L33 58 L44 69 L53 60 L69 80 Z" fill="#DCD2C7"/><circle cx="56" cy="31" r="7" fill="#DCD2C7"/>';}return s+'<path d="M4 4 H80" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>';}},
+  frame:{name:'写真フレーム',w:84,h:100,rc:1,def:{x:138,y:64,color:'#D6246E',on:true},draw:function(c,u){var s='<rect width="84" height="100" rx="4" fill="'+c+'"'+O+'/><rect x="6" y="6" width="72" height="88" rx="2" fill="#FFFFFF"/>';if(PHOTO&&/^data:image\//.test(PHOTO)){s+='<clipPath id="fc'+u+'"><rect x="11" y="11" width="62" height="78"/></clipPath><image href="'+PHOTO+'" x="11" y="11" width="62" height="78" preserveAspectRatio="xMidYMid slice" clip-path="url(#fc'+u+')"/>';}else{s+='<rect x="11" y="11" width="62" height="78" fill="#F3EEE8"/><path d="M15 80 L33 58 L44 69 L53 60 L69 80 Z" fill="#DCD2C7"/><circle cx="56" cy="31" r="7" fill="#DCD2C7"/>';}return s+'<path d="M4 4 H80" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>';}},
   uchiwa:{name:'うちわ',w:56,h:86,rc:1,def:{x:250,y:30,color:'#D6246E',on:false},draw:function(c){return '<rect x="25" y="44" width="6" height="42" rx="3" fill="#C8955F"/><circle cx="28" cy="25" r="25" fill="#FFFFFF"'+O+'/><circle cx="28" cy="25" r="21" fill="'+c+'"/><path d="'+HEART+'" fill="#FFFFFF" transform="translate(17 14) scale(.92)"/><path d="'+STAR+'" fill="#FFD86B" transform="translate(37 4) scale(.45)"/>';}},
   poster:{name:'ポスター',w:70,h:92,rc:1,def:{x:126,y:170,color:'#7B4BC9',on:false},draw:function(c){return '<rect width="70" height="92" rx="3" fill="'+tint(c,.78)+'"'+O+'/><path d="'+STAR+'" fill="'+c+'" transform="translate(13 10) scale(1.8)"/><rect x="12" y="62" width="46" height="5" rx="2.5" fill="'+c+'"/><rect x="18" y="73" width="34" height="4" rx="2" fill="'+c+'" opacity=".55"/><rect x="-5" y="-2" width="20" height="8" fill="#FFFFFF" opacity=".75" transform="rotate(-25 5 2)"/><rect x="55" y="-2" width="20" height="8" fill="#FFFFFF" opacity=".75" transform="rotate(25 65 2)"/>';}},
   shelf:{name:'グッズ棚',w:110,h:122,rc:0,def:{x:236,y:88,color:'#B98C66',on:true},draw:function(){return '<rect width="110" height="122" rx="4" fill="#C9A076"'+O+'/><rect x="6" y="4" width="98" height="114" fill="#EED9BF"/><rect x="18" y="20" width="18" height="30" rx="4" fill="#FFFFFF" stroke="#D6246E" stroke-width="1.5"/><path d="'+STAR+'" fill="#D6246E" transform="translate(21 28) scale(.5)"/><rect x="16" y="49" width="22" height="4" rx="2" fill="#3C3F58"/><rect x="44" y="26" width="18" height="27" rx="2" fill="#2F6FD6"/><rect x="50" y="29" width="18" height="24" rx="2" fill="#F7B8CF"/><ellipse cx="88" cy="42" rx="12" ry="10" fill="#FFE1EC"'+O+'/><ellipse cx="80" cy="33" rx="3.5" ry="5" fill="#FFE1EC"/><ellipse cx="96" cy="33" rx="3.5" ry="5" fill="#FFE1EC"/><circle cx="84" cy="41" r="1.4" fill="'+DARK+'"/><circle cx="92" cy="41" r="1.4" fill="'+DARK+'"/><rect x="0" y="53" width="110" height="8" rx="2" fill="#B98C66"/><rect x="14" y="78" width="9" height="30" rx="1.5" fill="#E07A12"/><rect x="24" y="80" width="9" height="28" rx="1.5" fill="#7B4BC9"/><rect x="34" y="76" width="9" height="32" rx="1.5" fill="#1F9A63"/><rect x="48" y="84" width="26" height="24" rx="2" fill="#FFFFFF"'+O+'/><circle cx="61" cy="96" r="7" fill="#D6246E" opacity=".8"/><path d="M84 107 L94 76" stroke="#D6246E" stroke-width="5" stroke-linecap="round"/><rect x="0" y="108" width="110" height="10" rx="2" fill="#B98C66"/>';}},
@@ -107,22 +114,27 @@ function fixState(s){
   return s;
 }
 function load(){try{var t=localStorage.getItem(KEY);return t?fixState(JSON.parse(t)):null;}catch(e){return null;}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true;}catch(e){return false;}}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S));return true;}catch(e){return false;}}
+function save(){var ok=saveLocal();if(S.onboarded&&cloudUser())window.KC.schedulePush(S);return ok;}
+function stateFromServer(sv){
+  var p=sv.pub||{},q=sv.priv||{};
+  return fixState({v:1,onboarded:true,me:p.me||defMe(),oshis:p.oshis||[],room:p.room||newState().room,money:q.money||{budget:25000,records:[]}});
+}
 var S=load()||newState();
-var UI={tab:'room',step:1,deco:false,sel:null,pane:'items',month:0,sheet:null,recAmount:'',recMemo:'',recDate:todayStr(),recCat:'goods',recOshi:'',del:null,budgetEdit:false,reset:false,oshiDraft:'',oshiColor:COLORS[0],shareURL:null,backup:null,restoreText:''};
+var UI={authMode:'in',authEmail:'',authPw:'',authBusy:false,conflict:null,tab:'room',step:1,deco:false,sel:null,pane:'items',month:0,sheet:null,recAmount:'',recMemo:'',recDate:todayStr(),recCat:'goods',recOshi:'',del:null,budgetEdit:false,reset:false,oshiDraft:'',oshiColor:COLORS[0],shareURL:null,backup:null,restoreText:''};
 var toastT;
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true;},2200);}
 
 /* ================= Room SVG ================= */
 function charG(R,opts){
   var s='<g class="it" data-id="char" transform="translate('+R.char.x+' '+R.char.y+')"><ellipse cx="'+(CHAR_W/2)+'" cy="'+(CHAR_H-6)+'" rx="34" ry="7" fill="#000" opacity=".08"/>';
-  (opts.layers||layers(S.me)).forEach(function(src){s+='<image href="'+esc(src)+'" width="'+CHAR_W+'" height="'+CHAR_H+'"/>';});
+  (opts.layers||layers(opts.me||S.me)).forEach(function(src){s+='<image href="'+esc(src)+'" width="'+CHAR_W+'" height="'+CHAR_H+'"/>';});
   return s+selRect('char',CHAR_W,CHAR_H,opts)+'</g>';
 }
 function roomSVG(opts){
-  opts=opts||{};var R=S.room,u='r'+(++counter),s='';
+  opts=opts||{};var R=opts.room||S.room,M=opts.me||S.me,u='r'+(++counter),s='';PHOTO=R.photo||null;
   var pc=lum(R.wall)<.45?tint(R.wall,.12):shade(R.wall,.07),fl=shade(R.floor,.1);
-  s+='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 380" width="360" height="380"'+(opts.id?' id="'+opts.id+'"':'')+(opts.cls?' class="'+opts.cls+'"':'')+' role="img" aria-label="'+esc((S.me.name||'わたし')+'の部屋')+'"><defs>';
+  s+='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 380" width="360" height="380"'+(opts.id?' id="'+opts.id+'"':'')+(opts.cls?' class="'+opts.cls+'"':'')+' role="img" aria-label="'+esc((M.name||'わたし')+'の部屋')+'"><defs>';
   s+='<pattern id="wp'+u+'" width="24" height="24" patternUnits="userSpaceOnUse">';
   if(R.wallPat===1)s+='<circle cx="6" cy="6" r="2.6" fill="'+pc+'"/><circle cx="18" cy="18" r="2.6" fill="'+pc+'"/>';
   else if(R.wallPat===2)s+='<rect width="12" height="24" fill="'+pc+'"/>';
@@ -139,7 +151,7 @@ function roomSVG(opts){
   return s+'</svg>';
 }
 function selRect(id,w,h,opts){if(opts.export||!UI.deco||UI.sel!==id)return '';return '<rect x="-5" y="-5" width="'+(w+10)+'" height="'+(h+10)+'" rx="6" fill="none" stroke="#FFFFFF" stroke-width="4"/><rect x="-5" y="-5" width="'+(w+10)+'" height="'+(h+10)+'" rx="6" fill="none" stroke="#1E2140" stroke-width="2" stroke-dasharray="6 4"/>';}
-function thumb(id){var d=ITEMS[id],it=S.room.items[id],p=8;return '<svg viewBox="'+(-p)+' '+(-p)+' '+(d.w+2*p)+' '+(d.h+2*p)+'" aria-hidden="true">'+drawItem(id,it.color,'t'+id+(++counter))+'</svg>';}
+function thumb(id){var d=ITEMS[id],it=S.room.items[id],p=8;PHOTO=S.room.photo||null;return '<svg viewBox="'+(-p)+' '+(-p)+' '+(d.w+2*p)+' '+(d.h+2*p)+'" aria-hidden="true">'+drawItem(id,it.color,'t'+id+(++counter))+'</svg>';}
 
 /* ================= Character editor ================= */
 function charEditor(){
@@ -169,6 +181,7 @@ function vOnboard(){
   if(UI.step>1)h+='<button class="btn sm" type="button" data-act="onb-back">戻る</button>';
   h+='<div class="progress" style="flex:1"><i class="on"></i><i class="'+(UI.step>=2?'on':'')+'"></i><i class="'+(UI.step>=3?'on':'')+'"></i></div><span class="small muted num">'+UI.step+' / 3</span></div>';
   if(UI.step===1){
+    if(cloudOn()&&!cloudUser())h+='<div class="banner"><span>前に使っていた人は、ログインすると続きから使えます</span><button class="mini" type="button" data-act="auth-open">ログイン</button></div>';
     h+='<div class="stack" style="gap:4px"><span class="tag" style="align-self:flex-start">キラペンへようこそ</span><h1>あなたのキャラをつくろう</h1><p class="muted small" style="margin:0">My Roomの主人公になります。あとから着せ替えできます。</p></div>';
     h+=charEditor()+'<label class="field"><span>ニックネーム</span><input class="input" id="onb-name" maxlength="12" placeholder="例：みつき" value="'+esc(S.me.name)+'"></label><button class="btn primary block" type="button" data-act="onb-next">次へ</button>';
   }else if(UI.step===2){
@@ -192,7 +205,7 @@ function vRoom(){
   h+='<div class="room-wrap">'+roomSVG({id:'room',cls:UI.deco?'deco':''})+'</div>';
   if(!UI.deco){
     h+='<div class="row"><button class="btn primary" style="flex:1" type="button" data-act="deco-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg>模様替え</button><button class="btn" style="flex:1" type="button" data-act="tab" data-v="settings">着せ替え</button></div>';
-    h+='<button class="btn block" type="button" data-act="share">シェア画像をつくる</button><p class="hint"><span class="dot" style="background:#F2B9CD"></span>部屋の貯金箱をタップすると、推し活に使ったお金を記録できます。</p>';
+    h+='<div class="row"><button class="btn" style="flex:1" type="button" data-act="share">シェア画像</button><button class="btn" style="flex:1" type="button" data-act="'+(cloudUser()?'link-copy':'auth-open')+'">部屋のリンク</button></div><p class="hint"><span class="dot" style="background:#F2B9CD"></span>部屋の貯金箱をタップすると、推し活に使ったお金を記録できます。</p>';
     if(S.oshis.length){h+='<div class="stack"><h3>わたしの推し</h3><div class="row wrap">';S.oshis.forEach(function(o){h+='<span class="chip"><span class="dot" style="background:'+o.color+'"></span>'+esc(o.name)+'</span>';});h+='</div></div>';}
   }else h+=vDecoPanel();
   return h;
@@ -247,6 +260,7 @@ function vMoney(){
 function vSettings(){
   var h='<h1>着せ替え・推し</h1><label class="field"><span>ニックネーム</span><input class="input" id="set-name" maxlength="12" value="'+esc(S.me.name)+'"></label>';
   h+=charEditor()+'<div class="stack"><h3>推し</h3>'+oshiEditor('set')+'</div>';
+  h+=vAccount();
   h+='<div class="card stack"><h3>データのバックアップ</h3><p class="small muted" style="margin:0">データはこのスマホのブラウザの中に保存されます。機種変更の前や、念のための控えに、バックアップの文字をメモアプリなどに保存しておいてね。</p>';
   if(UI.backup==='out'){var txt=JSON.stringify(Object.assign({},S,{room:Object.assign({},S.room,{photo:null})}));h+='<textarea class="input" id="backup-out" readonly>'+esc(txt)+'</textarea><div class="row"><button class="btn primary" style="flex:1" type="button" data-act="backup-copy">コピーする</button><button class="btn" style="flex:1" type="button" data-act="backup-close">閉じる</button></div><p class="small muted" style="margin:0">写真フレームの写真はバックアップに含まれません。</p>';}
   else if(UI.backup==='in')h+='<textarea class="input" id="backup-in" placeholder="保存しておいたバックアップの文字を貼り付けてね">'+esc(UI.restoreText)+'</textarea><div class="row"><button class="btn primary" style="flex:1" type="button" data-act="backup-restore">読み込む</button><button class="btn" style="flex:1" type="button" data-act="backup-close">やめる</button></div>';
@@ -254,6 +268,39 @@ function vSettings(){
   h+='</div><div class="card stack"><h3>最初からやり直す</h3>';
   h+=UI.reset?'<div class="row"><button class="btn" type="button" data-act="reset-no" style="flex:1">やめる</button><button class="btn" type="button" data-act="reset-yes" style="flex:1;border-color:var(--warn);color:var(--warn)">全部消して最初から</button></div>':'<button class="btn" type="button" data-act="reset-ask">最初からやり直す</button>';
   return h+'</div>';
+}
+function vAccount(){
+  var h='<div class="card stack"><h3>アカウント</h3>';
+  if(!cloudOn())return h+'<p class="small muted" style="margin:0">今はオンラインの機能が使えません。電波のよい場所で開き直してね。</p></div>';
+  var u=cloudUser();
+  if(!u)return h+'<p class="small muted" style="margin:0">ログインすると、My Roomがサーバーに保存されて、機種変更しても続きから使えます。部屋のリンクを送って、友だちに見てもらうこともできます。</p><button class="btn primary" type="button" data-act="auth-open">ログイン・新規登録</button></div>';
+  var st=window.KC.status,stTxt=st==='saving'?'保存中…':st==='error'?'保存できませんでした：'+esc(window.KC.error):'サーバーに保存済み';
+  h+='<p class="small" style="margin:0">ログイン中：'+esc(u.email||'')+'</p><p class="small" style="margin:0;font-weight:700;color:'+(st==='error'?'var(--warn)':'var(--ok)')+'">'+stTxt+'</p>';
+  h+='<label class="field"><span>My Roomのリンク（送ると部屋を見てもらえます）</span><input class="input" id="room-link" readonly value="'+esc(roomLink())+'"></label>';
+  h+='<div class="row"><button class="btn primary" style="flex:1" type="button" data-act="link-copy">リンクをコピー</button><button class="btn" style="flex:1" type="button" data-act="auth-out">ログアウト</button></div>';
+  return h+'<p class="small muted" style="margin:0">貯金箱のお金の記録は、ログインしても本人しか見られません。</p></div>';
+}
+function vAuthSheet(){
+  var up=UI.authMode==='up';
+  var h='<div class="overlay" data-act="sheet-bg"><form class="sheet" data-form="auth" role="dialog" aria-label="ログイン"><div class="row between"><h2>'+(up?'新規登録':'ログイン')+'</h2><button class="btn sm" type="button" data-act="auth-close">閉じる</button></div>';
+  h+='<div class="seg"><button type="button" class="'+(!up?'on':'')+'" data-act="auth-mode" data-v="in">ログイン</button><button type="button" class="'+(up?'on':'')+'" data-act="auth-mode" data-v="up">新規登録</button></div>';
+  h+='<label class="field"><span>メールアドレス</span><input class="input" id="auth-email" type="email" autocomplete="email" inputmode="email" value="'+esc(UI.authEmail)+'"></label>';
+  h+='<label class="field"><span>パスワード（6文字以上）</span><input class="input" id="auth-pw" type="password" autocomplete="'+(up?'new-password':'current-password')+'" value="'+esc(UI.authPw)+'"></label>';
+  h+='<button class="btn primary block" type="submit"'+(UI.authBusy?' disabled':'')+'>'+(UI.authBusy?'少し待ってね…':(up?'登録してログイン':'ログイン'))+'</button>';
+  if(up)h+='<p class="small muted" style="margin:0">登録すると、今この端末にあるMy Roomがサーバーに保存されます。</p>';
+  return h+'</form></div>';
+}
+function vConflict(){
+  return '<div class="overlay center"><div class="sheet" role="dialog" aria-label="どちらのMy Roomを使う？"><h2>どちらのMy Roomを使う？</h2><p class="small muted" style="margin:0">この端末と、サーバーに保存されているMy Roomがちがいます。使う方を選んでね。選ばなかった方は上書きされます。</p><button class="btn primary block" type="button" data-act="use-server">サーバーのMy Roomを使う</button><button class="btn block" type="button" data-act="use-local">この端末のMy Roomを使う</button></div></div>';
+}
+function vVisit(){
+  if(VISIT.loading)return '<p class="muted">部屋を読み込み中…</p>';
+  if(!VISIT.data)return '<div class="card stack"><h2>部屋が見つかりませんでした</h2><p class="small muted" style="margin:0">'+esc(VISIT.error||'リンクがまちがっているか、部屋がまだ保存されていないかもしれません。')+'</p><button class="btn primary" type="button" data-act="leave-visit">自分のMy Roomへ</button></div>';
+  var d=VISIT.data.data||{},me=d.me||defMe(),room=d.room;me.layers=me.layers||{};me.colors=me.colors||{};
+  var h='<div class="row between"><div><h1>'+esc(VISIT.data.nickname||'ゲスト')+'のMy Room</h1><p class="small muted" style="margin:0">遊びに来ています</p></div><span class="tag">キラペン</span></div>';
+  h+='<div class="room-wrap">'+(room?roomSVG({room:room,me:me,export:true}):'')+'</div>';
+  if(d.oshis&&d.oshis.length){h+='<div class="stack"><h3>推し</h3><div class="row wrap">';d.oshis.forEach(function(o){h+='<span class="chip"><span class="dot" style="background:'+esc(o.color)+'"></span>'+esc(o.name)+'</span>';});h+='</div></div>';}
+  return h+'<button class="btn primary block" type="button" data-act="leave-visit">キラペンで自分の部屋をつくる</button>';
 }
 function vRecSheet(){
   var h='<div class="overlay" data-act="sheet-bg"><form class="sheet" data-form="rec" role="dialog" aria-label="使ったお金を記録"><div class="row between"><h2>使ったお金を記録</h2><button class="btn sm" type="button" data-act="rec-close">閉じる</button></div>';
@@ -269,9 +316,10 @@ function vShare(){return '<div class="overlay center" data-act="share-bg"><div c
 function render(){
   counter=0;if(!PARTS)return;
   var app=document.getElementById('app'),nav=document.getElementById('nav'),layer=document.getElementById('layer');
+  if(VISIT){app.innerHTML=vVisit();nav.hidden=true;layer.innerHTML='';return;}
   if(!S.onboarded){app.innerHTML=vOnboard();nav.hidden=true;}
   else{nav.hidden=false;['room','money','settings'].forEach(function(t){document.getElementById('nav-'+t).classList.toggle('on',UI.tab===t);});app.innerHTML=UI.tab==='room'?vRoom():UI.tab==='money'?vMoney():vSettings();}
-  layer.innerHTML=UI.sheet==='rec'?vRecSheet():UI.sheet==='share'?vShare():'';
+  layer.innerHTML=UI.conflict?vConflict():UI.sheet==='rec'?vRecSheet():UI.sheet==='share'?vShare():UI.sheet==='auth'?vAuthSheet():'';
   bindRoom();
 }
 
@@ -350,6 +398,14 @@ function act(a,d){
       if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(function(){toast('コピーしました');},function(){ta.select();toast('文字を選んだので、コピーしてね');});}else{ta.select();toast('文字を選んだので、コピーしてね');}break;
     case 'backup-restore':var ns=null;try{ns=fixState(JSON.parse(UI.restoreText||''));}catch(e){ns=null;}
       if(!ns){toast('バックアップの文字を読み込めませんでした');return;}ns.room.photo=S.room.photo;S=ns;save();UI.backup=null;render();toast('バックアップから戻しました');break;
+    case 'auth-open':if(!cloudOn()){toast('今はオンラインの機能が使えません');return;}UI.sheet='auth';UI.authPw='';render();setTimeout(function(){var x=document.getElementById('auth-email');if(x)x.focus();},50);break;
+    case 'auth-close':UI.sheet=null;render();break;
+    case 'auth-mode':UI.authMode=v;render();break;
+    case 'auth-out':window.KC.signOut().then(function(){toast('ログアウトしました');render();});break;
+    case 'link-copy':var lk=roomLink();if(lk)copyText(lk,'room-link');break;
+    case 'use-server':var ns=stateFromServer(UI.conflict);UI.conflict=null;if(ns){ns.room.photo=ns.room.photo||null;S=ns;saveLocal();}window.KC.paused=false;render();toast('サーバーのMy Roomにしました');break;
+    case 'use-local':UI.conflict=null;window.KC.paused=false;window.KC.schedulePush(S);render();toast('この端末のMy Roomをサーバーに保存します');break;
+    case 'leave-visit':VISIT=null;try{history.replaceState(null,'',location.pathname);}catch(e){}render();window.scrollTo(0,0);break;
     case 'reset-ask':UI.reset=true;render();break;
     case 'reset-no':UI.reset=false;render();break;
     case 'reset-yes':S=newState();save();UI.reset=false;UI.step=1;UI.tab='room';render();window.scrollTo(0,0);break;
@@ -368,6 +424,8 @@ document.addEventListener('input',function(e){
   else if(id==='rec-memo')UI.recMemo=e.target.value;
   else if(id==='rec-date')UI.recDate=e.target.value;
   else if(id==='backup-in')UI.restoreText=e.target.value;
+  else if(id==='auth-email')UI.authEmail=e.target.value;
+  else if(id==='auth-pw')UI.authPw=e.target.value;
 });
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&(e.target.id==='onb-oshi'||e.target.id==='set-oshi')){e.preventDefault();addOshi();}
@@ -375,6 +433,18 @@ document.addEventListener('keydown',function(e){
 });
 document.addEventListener('submit',function(e){
   var f=e.target.getAttribute('data-form');if(!f)return;e.preventDefault();
+  if(f==='auth'){
+    var em=(UI.authEmail||'').trim(),pw=UI.authPw||'';
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){toast('メールアドレスを確かめてね');return;}
+    if(pw.length<6){toast('パスワードは6文字以上にしてね');return;}
+    UI.authBusy=true;render();
+    var p=UI.authMode==='up'?window.KC.signUp(em,pw):window.KC.signIn(em,pw);
+    p.then(function(r){UI.authBusy=false;UI.authPw='';
+      if(r&&r.needConfirm){UI.sheet=null;render();toast('確認メールを送りました。メールのリンクを押してね');return;}
+      UI.sheet=null;render();
+    },function(err){UI.authBusy=false;render();toast(window.KC.message(err));});
+    return;
+  }
   if(f==='budget'){var n=parseInt(String(document.getElementById('budget-in').value).replace(/[^0-9]/g,''),10);if(isNaN(n)){toast('数字で入れてね');return;}S.money.budget=n;UI.budgetEdit=false;save();render();}
   if(f==='rec'){
     var amt=parseInt(String(UI.recAmount).replace(/[^0-9]/g,''),10);if(!amt||amt<=0){toast('金額を入れてね');return;}
@@ -428,9 +498,25 @@ function makeShare(){
 function roundRect(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();}
 
 /* ================= Boot ================= */
+function syncAfterLogin(){
+  var KC=window.KC;KC.paused=true;
+  KC.pull().then(function(sv){
+    if(!sv){KC.paused=false;if(S.onboarded){KC.schedulePush(S);toast('My Roomをサーバーに保存しました');}render();return;}
+    if(!S.onboarded){var ns=stateFromServer(sv);if(ns){S=ns;saveLocal();}KC.paused=false;UI.tab='room';render();toast('おかえりなさい！');return;}
+    UI.conflict=sv;render();
+  },function(e){KC.paused=false;toast(KC.message(e));render();});
+}
 function boot(p){
   PARTS=p;SLOT={};PARTS.slots.forEach(function(s){SLOT[s.id]=s;});
   if(!findItem('hair',S.me.layers.hair)&&slotItems('hair')[0])S.me.layers.hair=slotItems('hair')[0].id;
+  var rid=null;try{rid=new URLSearchParams(location.search).get('room');}catch(e){}
+  if(rid&&/^[0-9a-f-]{36}$/i.test(rid)){
+    VISIT={loading:true};
+    var go=function(){if(!cloudOn()){VISIT={loading:false,error:'今はオンラインの機能が使えません。'};render();return;}
+      window.KC.fetchRoom(rid).then(function(d){VISIT={loading:false,data:d};render();},function(e){VISIT={loading:false,error:window.KC.message(e)};render();});};
+    go();
+  }
+  if(window.KC&&window.KC.onChange)window.KC.onChange(function(){if(window.KC.justSignedIn){window.KC.justSignedIn=false;syncAfterLogin();}else render();});
   render();
 }
 if(window.KIRAPEN_PARTS)boot(window.KIRAPEN_PARTS);

@@ -50,6 +50,15 @@ sw.js                 オフラインでも開けるようにする仕組み
 
 ## データについて
 
-- データはスマホのブラウザの中（localStorage）に保存。サーバーには送らない
+- ログインしていないときは、データはスマホのブラウザの中（localStorage）だけに保存。ログインするとSupabaseにも保存
 - 「着せ替え・推し」タブの「バックアップをとる」で、データを文字として控えられる
 - 写真フレームの写真はバックアップに含まれない
+
+## ログインと保存（Supabase）
+
+- 設定は `js/cloud.js` の `SUPABASE_URL` と `SUPABASE_KEY`（公開してよい publishable key だけ）
+- テーブルの作り方：Supabase の SQL Editor に `supabase/schema.sql` を貼って Run
+- `profiles`：みんなに見せる部屋（キャラ・推し・部屋）。だれでも見られる、本人だけ書ける
+- `private_data`：貯金箱のお金の記録。本人だけ見られる
+- 部屋のリンク：`https://dianajd0283-code.github.io/kirapen/?room=（ユーザーID）`
+- service_role key / secret key / Database Password は、このリポジトリに絶対に書かない
