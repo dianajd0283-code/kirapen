@@ -62,3 +62,8 @@ sw.js                 オフラインでも開けるようにする仕組み
 - `private_data`：貯金箱のお金の記録。本人だけ見られる
 - 部屋のリンク：`https://dianajd0283-code.github.io/kirapen/?room=（ユーザーID）`
 - service_role key / secret key / Database Password は、このリポジトリに絶対に書かない
+
+## 投稿・タイムライン（第2弾）
+- `supabase/posts.sql` を Supabase の SQL Editor で1回実行すると、投稿・わかる・通報・ブロック・写真の保存場所ができます。
+- 3人から通報された投稿は自動で非表示になり、運営が「通報を確認」画面で 削除 / 問題なし を選べます。
+- 運営にする人は `public.admins` テーブルに user_id を入れます（SQL Editor から）。
