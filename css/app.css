@@ -131,3 +131,5 @@ textarea.input{height:120px;padding:12px 14px;font-family:ui-monospace,Menlo,mon
 .opt .none{display:flex;align-items:center;justify-content:center;height:58px;color:var(--muted);font-size:12px}
 .soon{display:flex;flex-wrap:wrap;gap:6px}
 .soon span{font-size:11px;padding:3px 10px;border-radius:10px;border:1px dashed var(--line);color:var(--muted)}
+
+.mini{white-space:nowrap;flex-shrink:0}

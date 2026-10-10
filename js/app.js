@@ -166,7 +166,7 @@ function charEditor(){
     h+='</div></div>';
     if(sl.recolor&&cur){
       var pal=sl.palette==='hair'?HAIRPAL:CLOTHPAL,cc=S.me.colors[sid]||'orig';
-      h+='<div class="stack"><span class="lbl">'+esc(sl.name)+'の色</span><div class="swrow">';
+      var cl=sid==='hair'?'髪':sl.name;h+='<div class="stack"><span class="lbl">'+esc(cl)+'の色</span><div class="swrow">';
       pal.forEach(function(c){h+='<button type="button" class="sw'+(cc===c[0]?' on':'')+'" style="background:'+c[2]+'" data-act="lcolor" data-k="'+sid+'" data-v="'+c[0]+'" aria-label="'+esc(sl.name)+'の色 '+c[1]+'"></button>';});
       h+='</div></div>';
     }
