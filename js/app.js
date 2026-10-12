@@ -682,6 +682,6 @@ function boot(p){
 function hideSplash(){var sp=document.getElementById('splash');if(!sp)return;sp.classList.add('done');setTimeout(function(){sp.classList.add('hide');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},500);},350);}
 if(window.KIRAPEN_PARTS)boot(window.KIRAPEN_PARTS);
 else fetch('assets/parts.json',{cache:'no-cache'}).then(function(r){return r.json();}).then(boot).catch(function(){hideSplash();document.getElementById('app').innerHTML='<div class="card"><b>読み込みに失敗しました</b><p class="small muted">通信のよい場所で、もう一度開いてみてね。</p></div>';});
-if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.KIRAPEN_PARTS){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.KIRAPEN_PARTS){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').then(function(r){try{r.update();}catch(e){}}).catch(function(){});var had=!!navigator.serviceWorker.controller,rl=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(had&&!rl){rl=true;location.reload();}});});}
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 })();
