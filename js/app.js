@@ -475,7 +475,7 @@ function act(a,d){
     case 'oshi-color':UI.oshiColor=v;render();break;
     case 'oshi-add':addOshi();break;
     case 'oshi-del':S.oshis=S.oshis.filter(function(o){return o.id!==v;});save();render();break;
-    case 'tab':UI.tab=v;UI.deco=false;UI.sel=null;UI.del=null;UI.reset=false;UI.backup=null;FEED.menu=null;FEED.confirm=null;render();window.scrollTo(0,0);if(v==='feed'&&!FEED.loaded)loadFeed(true);break;
+    case 'tab':UI.tab=v;UI.deco=false;UI.sel=null;UI.del=null;UI.reset=false;UI.backup=null;FEED.menu=null;FEED.confirm=null;render();window.scrollTo(0,0);if(v==='feed'){if(!FEED.loaded)loadFeed(true);if(cloudUser()&&!window.KC.isAdmin)window.KC.checkAdmin();}break;
     case 'feed-oshi':FEED.oshi=v||'';loadFeed(true);break;
     case 'feed-reload':loadFeed(true);break;
     case 'feed-more':loadFeed(false);break;
