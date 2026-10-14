@@ -66,7 +66,7 @@
     if (!KC.user) return Promise.resolve();
     var id = KC.user.id, now = new Date().toISOString();
     var pub = { v: 1, me: S.me, oshis: S.oshis, room: S.room };
-    var priv = { v: 1, money: S.money };
+    var priv = { v: 1, money: S.money, events: S.events || [] };
     return sb.from('profiles').upsert({ id: id, nickname: String(S.me.name || '').slice(0, 24), data: pub, updated_at: now })
       .then(function (r) { if (r.error) throw r.error; return sb.from('private_data').upsert({ id: id, data: priv, updated_at: now }); })
       .then(function (r) { if (r.error) throw r.error; });

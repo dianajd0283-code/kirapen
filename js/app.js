@@ -113,12 +113,12 @@ function drawItem(id,color,u){var r=PARTS&&PARTS.room&&PARTS.room[id],d=ITEMS[id
 function defMe(){return {name:'',layers:{hair:'bob'},colors:{hair:'orig'}};}
 function newState(){
   var items={};CATALOG.forEach(function(id){var d=ITEMS[id].def;items[id]={on:d.on,x:d.x,y:d.y,color:d.color};});
-  return {v:1,onboarded:false,me:defMe(),oshis:[],room:{wall:WALLS[0],wallPat:1,floor:FLOORS[0],floorPat:1,items:items,char:{x:110,y:168},photo:null},money:{budget:25000,records:[]}};
+  return {v:1,onboarded:false,me:defMe(),oshis:[],room:{wall:WALLS[0],wallPat:1,floor:FLOORS[0],floorPat:1,items:items,char:{x:110,y:168},photo:null},money:{budget:25000,records:[]},events:[]};
 }
 function fixState(s){
   if(!s||s.v!==1||!s.me||!s.room||!s.money)return null;
   s.me.layers=s.me.layers||{};s.me.colors=s.me.colors||{};if(!s.me.layers.hair)s.me.layers.hair='bob';
-  s.oshis=s.oshis||[];s.money.records=s.money.records||[];
+  s.oshis=s.oshis||[];s.money.records=s.money.records||[];s.events=Array.isArray(s.events)?s.events:[];
   CATALOG.forEach(function(id){if(!s.room.items[id]){var d=ITEMS[id].def;s.room.items[id]={on:false,x:d.x,y:d.y,color:d.color};}});
   return s;
 }
@@ -127,10 +127,10 @@ function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S));return true
 function save(){var ok=saveLocal();if(S.onboarded&&cloudUser())window.KC.schedulePush(S);return ok;}
 function stateFromServer(sv){
   var p=sv.pub||{},q=sv.priv||{};
-  return fixState({v:1,onboarded:true,me:p.me||defMe(),oshis:p.oshis||[],room:p.room||newState().room,money:q.money||{budget:25000,records:[]}});
+  return fixState({v:1,onboarded:true,me:p.me||defMe(),oshis:p.oshis||[],room:p.room||newState().room,money:q.money||{budget:25000,records:[]},events:q.events||[]});
 }
 var S=load()||newState();
-var UI={authMode:'in',authEmail:'',authPw:'',authBusy:false,conflict:null,tab:'room',step:0,deco:false,sel:null,pane:'items',month:0,sheet:null,recAmount:'',recMemo:'',recDate:todayStr(),recCat:'goods',recOshi:'',del:null,budgetEdit:false,reset:false,oshiDraft:'',oshiColor:COLORS[0],shareURL:null,backup:null,restoreText:''};
+var UI={authMode:'in',authEmail:'',authPw:'',authBusy:false,conflict:null,tab:'room',step:0,deco:false,sel:null,pane:'items',month:0,sheet:null,recAmount:'',recMemo:'',recDate:todayStr(),recCat:'goods',recOshi:'',del:null,budgetEdit:false,reset:false,oshiDraft:'',oshiColor:COLORS[0],shareURL:null,backup:null,restoreText:'',calMonth:0,calDay:null,ev:null,evDel:false};
 var toastT;
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true;},2200);}
 
@@ -220,6 +220,7 @@ function oshiEditor(prefix){
 }
 function vRoom(){
   var h='<div class="row between"><div><h1>My Room</h1><p class="small muted" style="margin:0">'+esc(S.me.name||'わたし')+'の部屋</p></div><span class="tag">キラペン</span></div>';
+  if(!UI.deco)h+=nextBanner();
   h+='<div class="room-wrap">'+roomSVG({id:'room',cls:UI.deco?'deco':''})+'</div>';
   if(!UI.deco){
     h+='<div class="row"><button class="btn primary" style="flex:1" type="button" data-act="deco-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg>模様替え</button><button class="btn" style="flex:1" type="button" data-act="tab" data-v="settings">着せ替え</button></div>';
@@ -278,6 +279,7 @@ function vMoney(){
 function vSettings(){
   var h='<h1>着せ替え・推し</h1><label class="field"><span>ニックネーム</span><input class="input" id="set-name" maxlength="12" value="'+esc(S.me.name)+'"></label>';
   h+=charEditor()+'<div class="stack"><h3>推し</h3>'+oshiEditor('set')+'</div>';
+  h+=vTheme();
   h+=vAccount();
   h+='<div class="card stack"><h3>データのバックアップ</h3><p class="small muted" style="margin:0">データはこのスマホのブラウザの中に保存されます。機種変更の前や、念のための控えに、バックアップの文字をメモアプリなどに保存しておいてね。</p>';
   if(UI.backup==='out'){var txt=JSON.stringify(Object.assign({},S,{room:Object.assign({},S.room,{photo:null})}));h+='<textarea class="input" id="backup-out" readonly>'+esc(txt)+'</textarea><div class="row"><button class="btn primary" style="flex:1" type="button" data-act="backup-copy">コピーする</button><button class="btn" style="flex:1" type="button" data-act="backup-close">閉じる</button></div><p class="small muted" style="margin:0">写真フレームの写真はバックアップに含まれません。</p>';}
@@ -415,14 +417,102 @@ function vRecSheet(){
 }
 function vShare(){return '<div class="overlay center" data-act="share-bg"><div class="sheet" role="dialog" aria-label="シェア画像"><div class="row between"><h2>シェア画像</h2><button class="btn sm" type="button" data-act="share-close">閉じる</button></div>'+(UI.shareURL?'<img class="share-img" src="'+UI.shareURL+'" alt="My Roomのシェア画像"><p class="small muted" style="margin:0">画像を長押し（パソコンでは右クリック）して保存し、TikTokやXでシェアしてね。</p>':'<p class="muted">画像をつくっています…</p>')+'</div></div>';}
 
+/* ================= Theme（アプリの色） ================= */
+var THEMES=[['#F7A8C6','パステルピンク'],['#C9B6F2','ラベンダー'],['#A8D8F0','みずいろ'],['#A6E3C8','ミント'],['#F6DE8D','レモン'],['#F9C0A0','ピーチ'],['#B9C2E8','ブルーグレー']];
+var DEF_THEME='#F7A8C6';
+function hsl2hex(h,s,l){s/=100;l/=100;var k=function(n){return (n+h/30)%12;},a=s*Math.min(l,1-l),f=function(n){return l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));};return rgb2hex([f(0)*255,f(8)*255,f(4)*255]);}
+function hex2hsl(hex){var c=hex2rgb(hex).map(function(v){return v/255;}),mx=Math.max.apply(0,c),mn=Math.min.apply(0,c),l=(mx+mn)/2,h=0,s=0,d=mx-mn;
+  if(d){s=d/(1-Math.abs(2*l-1));if(mx===c[0])h=((c[1]-c[2])/d)%6;else if(mx===c[1])h=(c[2]-c[0])/d+2;else h=(c[0]-c[1])/d+4;h*=60;if(h<0)h+=360;}return [h,s*100,l*100];}
+function lum(hex){return hex2rgb(hex).map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);}).reduce(function(a,v,i){return a+v*[.2126,.7152,.0722][i];},0);}
+function contrast(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+function themeVars(hex){
+  var t=hex2hsl(/^#[0-9a-f]{6}$/i.test(hex||'')?hex:DEF_THEME),h=t[0],s=Math.max(8,Math.min(t[1],78)),gs=Math.min(s,60);
+  var acc,L;for(L=58;L>18;L-=1){acc=hsl2hex(h,Math.max(s,30),L);if(contrast(acc,'#FFFFFF')>=4.6)break;}
+  var dacc;for(L=68;L<92;L+=1){dacc=hsl2hex(h,Math.max(s,45),L);if(contrast(dacc,hsl2hex(h,30,10))>=6)break;}
+  return {light:{'--bg':hsl2hex(h,gs,97),'--surface':'#FFFFFF','--sunk':hsl2hex(h,gs*.7,93),'--line':hsl2hex(h,gs*.55,88),'--fg':hsl2hex(h,32,17),'--muted':hsl2hex(h,10,40),'--accent':acc,'--on-accent':'#FFFFFF','--soft':hsl2hex(h,Math.max(s,40),92),'--soft-ink':hsl2hex(h,Math.max(s,40),30),'--shadow':'rgba(60,40,60,.10)'},
+    dark:{'--bg':hsl2hex(h,22,10),'--surface':hsl2hex(h,20,14),'--sunk':hsl2hex(h,18,19),'--line':hsl2hex(h,16,26),'--fg':hsl2hex(h,30,95),'--muted':hsl2hex(h,12,70),'--accent':dacc,'--on-accent':hsl2hex(h,30,10),'--soft':hsl2hex(h,28,22),'--soft-ink':hsl2hex(h,70,82),'--shadow':'rgba(0,0,0,.35)'},
+    bar:hsl2hex(h,gs,92)};
+}
+var THEME_NOW=null;
+function applyTheme(hex){
+  hex=hex||DEF_THEME;if(THEME_NOW===hex)return;THEME_NOW=hex;var v=themeVars(hex);
+  var css=function(o){return Object.keys(o).map(function(k){return k+':'+o[k];}).join(';');};
+  var st=document.getElementById('theme-css');if(!st){st=document.createElement('style');st.id='theme-css';document.head.appendChild(st);}
+  st.textContent=':root{'+css(v.light)+'}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){'+css(v.dark)+';color-scheme:dark}}:root[data-theme="dark"]{'+css(v.dark)+';color-scheme:dark}';
+  var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',v.bar);
+}
+function vTheme(){
+  var cur=S.room.theme||DEF_THEME;
+  var sw=function(c,name){return '<button type="button" class="theme-sw'+(cur.toLowerCase()===c.toLowerCase()?' on':'')+'" data-act="theme" data-v="'+c+'" aria-label="'+esc(name)+'" aria-pressed="'+(cur.toLowerCase()===c.toLowerCase())+'"><span style="background:'+c+'"></span><b>'+esc(name)+'</b></button>';};
+  var h='<div class="card stack"><h3>アプリの色</h3><p class="small muted" style="margin:0">ボタンや背景の色が変わります。</p>';
+  if(S.oshis.length){h+='<span class="lbl">推しの色</span><div class="theme-grid">';S.oshis.forEach(function(o){h+=sw(o.color,o.name);});h+='</div>';}
+  h+='<span class="lbl">パステル</span><div class="theme-grid">';THEMES.forEach(function(t){h+=sw(t[0],t[1]);});
+  return h+'</div></div>';
+}
+
+/* ================= 予定（カレンダー） ================= */
+var EKINDS=[['live','ライブ'],['release','発売・配信'],['bday','誕生日・記念日'],['event','イベント'],['other','その他']];
+function ekName(k){for(var i=0;i<EKINDS.length;i++)if(EKINDS[i][0]===k)return EKINDS[i][1];return '';}
+function oshiColor(n){var o=S.oshis.filter(function(x){return x.name===n;})[0];return o?o.color:'var(--accent)';}
+function dstr(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function dparse(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+function eventsOn(day){return S.events.filter(function(e){return e.date===day||(e.kind==='bday'&&e.date.slice(5)===day.slice(5)&&e.date<=day);}).sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99');});}
+function nextDate(e,today){if(e.kind!=='bday')return e.date>=today?e.date:null;var y=+today.slice(0,4),d=y+e.date.slice(4);if(d<today)d=(y+1)+e.date.slice(4);return d<e.date?e.date:d;}
+function upcoming(n){var t=todayStr();return S.events.map(function(e){return {e:e,d:nextDate(e,t)};}).filter(function(x){return x.d;}).sort(function(a,b){return a.d===b.d?(a.e.time||'99').localeCompare(b.e.time||'99'):a.d<b.d?-1:1;}).slice(0,n);}
+function daysTo(d){return Math.round((dparse(d)-dparse(todayStr()))/864e5);}
+function untilTxt(d){var n=daysTo(d);return n===0?'今日！':n===1?'明日':'あと'+n+'日';}
+function mdTxt(d){var x=dparse(d);return (x.getMonth()+1)+'/'+x.getDate()+'（'+'日月火水木金土'[x.getDay()]+'）';}
+function evRow(e,d){
+  return '<button type="button" class="ev" data-act="ev-edit" data-v="'+e.id+'"><span class="ev-bar" style="background:'+(e.oshi?oshiColor(e.oshi):'var(--accent)')+'"></span><span class="ev-main"><b>'+esc(e.title)+'</b><span class="small muted">'+[d?mdTxt(d):'',e.time?esc(e.time):'',e.oshi?esc(e.oshi):''].filter(Boolean).join('・')+(e.memo&&!d?'<br>'+esc(e.memo):'')+'</span></span>'+(d?'<span class="ev-cd'+(daysTo(d)<=1?' hot':'')+'">'+untilTxt(d)+'</span>':'<span class="kind">'+ekName(e.kind)+'</span>')+'</button>';
+}
+function nextBanner(){
+  var u=upcoming(1)[0];if(!u)return '';
+  return '<button type="button" class="next-ev" data-act="tab" data-v="cal"><span class="small">次の予定</span><b>'+esc(u.e.title)+'</b><span class="next-cd">'+untilTxt(u.d)+'</span></button>';
+}
+function vCal(){
+  var base=new Date();base.setDate(1);base.setMonth(base.getMonth()+UI.calMonth);
+  var y=base.getFullYear(),m=base.getMonth(),today=todayStr(),sel=UI.calDay||today;
+  var h='<div><h1>予定</h1><p class="small muted" style="margin:0">ライブや発売日、推しの誕生日をまとめよう</p></div>';
+  h+=nextBanner();
+  h+='<div class="card cal"><div class="row between"><button class="mini" type="button" data-act="cal-month" data-v="-1" aria-label="前の月">‹</button><h3>'+y+'年'+(m+1)+'月</h3><button class="mini" type="button" data-act="cal-month" data-v="1" aria-label="次の月">›</button></div><div class="cal-grid">';
+  '日月火水木金土'.split('').forEach(function(w,i){h+='<span class="cal-w'+(i===0?' sun':i===6?' sat':'')+'">'+w+'</span>';});
+  var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  for(var i=0;i<first;i++)h+='<span></span>';
+  for(var d=1;d<=days;d++){var ds=y+'-'+pad(m+1)+'-'+pad(d),evs=eventsOn(ds);
+    h+='<button type="button" class="cal-d'+(ds===today?' today':'')+(ds===sel?' sel':'')+'" data-act="cal-day" data-v="'+ds+'" aria-label="'+(m+1)+'月'+d+'日'+(evs.length?' 予定'+evs.length+'件':'')+'"><span>'+d+'</span><i>'+evs.slice(0,3).map(function(e){return '<em style="background:'+(e.oshi?oshiColor(e.oshi):'var(--accent)')+'"></em>';}).join('')+'</i></button>';}
+  h+='</div></div>';
+  var list=eventsOn(sel);
+  h+='<div class="stack"><div class="row between"><h3>'+mdTxt(sel)+'</h3><button class="mini" type="button" data-act="ev-new" data-v="'+sel+'">この日に追加</button></div>';
+  h+=list.length?list.map(function(e){return evRow(e,null);}).join(''):'<p class="small muted" style="margin:0">この日の予定はありません。</p>';
+  h+='</div>';
+  var up=upcoming(8);
+  h+='<div class="stack"><h3>これからの予定</h3>'+(up.length?up.map(function(x){return evRow(x.e,x.d);}).join(''):'<div class="card" style="text-align:center"><b>まだ予定がありません</b><p class="small muted" style="margin:6px 0 0">右下の「予定を追加」から、ライブや発売日を入れてみてね。</p></div>')+'</div>';
+  h+='<button class="fab" type="button" data-act="ev-new"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>予定を追加</button>';
+  return h;
+}
+function vEventSheet(){
+  var e=UI.ev,isNew=!e.id;
+  var h='<div class="overlay" data-act="sheet-bg"><form class="sheet" data-form="ev" role="dialog" aria-label="予定"><div class="row between"><h2>'+(isNew?'予定を追加':'予定を編集')+'</h2><button class="btn sm" type="button" data-act="ev-close">閉じる</button></div>';
+  h+='<label class="field"><span>なにがある？</span><input class="input" id="ev-title" maxlength="40" placeholder="例：ツアー東京公演" value="'+esc(e.title)+'"></label>';
+  h+='<div class="field"><span>種類</span><div class="row wrap">';EKINDS.forEach(function(k){h+='<button type="button" class="chip'+(e.kind===k[0]?' on':'')+'" data-act="ev-kind" data-v="'+k[0]+'">'+k[1]+'</button>';});h+='</div></div>';
+  h+='<div class="row"><label class="field" style="flex:1.4"><span>日付</span><input class="input" type="date" id="ev-date" value="'+esc(e.date)+'"></label><label class="field" style="flex:1"><span>時間（なくてもOK）</span><input class="input" type="time" id="ev-time" value="'+esc(e.time)+'"></label></div>';
+  if(e.kind==='bday')h+='<p class="small muted" style="margin:0">誕生日・記念日は、毎年同じ日に表示されます。</p>';
+  if(S.oshis.length){h+='<div class="field"><span>どの推し？</span><div class="row wrap"><button type="button" class="chip'+(!e.oshi?' on':'')+'" data-act="ev-oshi" data-v="">えらばない</button>';S.oshis.forEach(function(o){h+='<button type="button" class="chip'+(e.oshi===o.name?' on':'')+'" data-act="ev-oshi" data-v="'+esc(o.name)+'"><span class="dot" style="background:'+o.color+'"></span>'+esc(o.name)+'</button>';});h+='</div></div>';}
+  h+='<label class="field"><span>メモ（なくてもOK）</span><input class="input" id="ev-memo" maxlength="80" placeholder="例：開場17時、グッズ列は15時から" value="'+esc(e.memo)+'"></label>';
+  h+='<button class="btn primary block" type="submit" style="min-height:54px;font-size:16px">'+(isNew?'追加する':'保存する')+'</button>';
+  if(!isNew)h+=UI.evDel?'<button class="btn block" type="button" data-act="ev-del" style="border-color:var(--warn);color:var(--warn)">本当に消す</button>':'<button class="btn ghost block" type="button" data-act="ev-del">この予定を消す</button>';
+  return h+'</form></div>';
+}
+
 /* ================= Render ================= */
 function render(){
   counter=0;if(!PARTS)return;
   var app=document.getElementById('app'),nav=document.getElementById('nav'),layer=document.getElementById('layer');
+  applyTheme(VISIT&&VISIT.data&&VISIT.data.data&&VISIT.data.data.room?VISIT.data.data.room.theme:S.room.theme);
   if(VISIT){app.innerHTML=vVisit();nav.hidden=true;layer.innerHTML='';return;}
   if(!S.onboarded){app.innerHTML=vOnboard();nav.hidden=true;}
-  else{nav.hidden=false;['room','feed','money','settings'].forEach(function(t){document.getElementById('nav-'+t).classList.toggle('on',UI.tab===t);});app.innerHTML=UI.tab==='room'?vRoom():UI.tab==='feed'?vFeed():UI.tab==='money'?vMoney():vSettings();}
-  layer.innerHTML=UI.conflict?vConflict():UI.sheet==='rec'?vRecSheet():UI.sheet==='share'?vShare():UI.sheet==='auth'?vAuthSheet():UI.sheet==='post'?vPostSheet():UI.sheet==='report'?vReportSheet():'';
+  else{nav.hidden=false;['room','feed','cal','money','settings'].forEach(function(t){document.getElementById('nav-'+t).classList.toggle('on',UI.tab===t);});app.innerHTML=UI.tab==='room'?vRoom():UI.tab==='feed'?vFeed():UI.tab==='cal'?vCal():UI.tab==='money'?vMoney():vSettings();}
+  layer.innerHTML=UI.conflict?vConflict():UI.sheet==='rec'?vRecSheet():UI.sheet==='share'?vShare():UI.sheet==='auth'?vAuthSheet():UI.sheet==='post'?vPostSheet():UI.sheet==='report'?vReportSheet():UI.sheet==='ev'?vEventSheet():'';
   bindRoom();
 }
 
@@ -476,6 +566,15 @@ function act(a,d){
     case 'oshi-add':addOshi();break;
     case 'oshi-del':S.oshis=S.oshis.filter(function(o){return o.id!==v;});save();render();break;
     case 'tab':UI.tab=v;UI.deco=false;UI.sel=null;UI.del=null;UI.reset=false;UI.backup=null;FEED.menu=null;FEED.confirm=null;render();window.scrollTo(0,0);if(v==='feed'){if(!FEED.loaded)loadFeed(true);if(cloudUser()&&!window.KC.isAdmin)window.KC.checkAdmin();}break;
+    case 'theme':S.room.theme=v;save();render();break;
+    case 'cal-month':UI.calMonth+=Number(v);render();break;
+    case 'cal-day':UI.calDay=v;render();break;
+    case 'ev-new':UI.ev={id:null,title:'',kind:'live',date:v||UI.calDay||todayStr(),time:'',oshi:S.oshis[0]?S.oshis[0].name:'',memo:''};UI.evDel=false;UI.sheet='ev';render();setTimeout(function(){var x=document.getElementById('ev-title');if(x)x.focus();},50);break;
+    case 'ev-edit':var ee=S.events.filter(function(x){return x.id===v;})[0];if(!ee)return;UI.ev=JSON.parse(JSON.stringify(ee));UI.ev.time=UI.ev.time||'';UI.ev.memo=UI.ev.memo||'';UI.ev.oshi=UI.ev.oshi||'';UI.evDel=false;UI.sheet='ev';render();break;
+    case 'ev-close':UI.sheet=null;render();break;
+    case 'ev-kind':UI.ev.kind=v;render();break;
+    case 'ev-oshi':UI.ev.oshi=v||'';render();break;
+    case 'ev-del':if(!UI.evDel){UI.evDel=true;render();return;}S.events=S.events.filter(function(x){return x.id!==UI.ev.id;});UI.sheet=null;save();render();toast('予定を消しました');break;
     case 'feed-oshi':FEED.oshi=v||'';loadFeed(true);break;
     case 'feed-reload':loadFeed(true);break;
     case 'feed-more':loadFeed(false);break;
@@ -554,6 +653,7 @@ document.addEventListener('input',function(e){
   else if(id==='backup-in')UI.restoreText=e.target.value;
   else if(id==='auth-email')UI.authEmail=e.target.value;
   else if(id==='auth-pw')UI.authPw=e.target.value;
+  else if(id==='ev-title'||id==='ev-date'||id==='ev-time'||id==='ev-memo'){if(UI.ev)UI.ev[id.slice(3)]=e.target.value;}
   else if(id==='post-body'){POST.body=e.target.value;var pc=document.getElementById('post-count');if(pc)pc.textContent=POST.body.length+' / 300';}
 });
 document.addEventListener('keydown',function(e){
@@ -587,6 +687,15 @@ document.addEventListener('submit',function(e){
       POST={kind:'word',body:'',oshi:POST.oshi,img:null,blob:null,busy:false};UI.sheet=null;UI.tab='feed';render();window.scrollTo(0,0);toast('投稿しました');
     },function(err){POST.busy=false;render();toast(KC.message(err));});
     return;
+  }
+  if(f==='ev'){
+    var ev=UI.ev,t=(ev.title||'').trim();
+    if(!t){toast('なにがあるか入れてね');return;}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(ev.date||'')){toast('日付を選んでね');return;}
+    var row={id:ev.id||uid(),title:t.slice(0,40),kind:ev.kind,date:ev.date,time:/^\d{2}:\d{2}$/.test(ev.time||'')?ev.time:'',oshi:ev.oshi||'',memo:(ev.memo||'').trim().slice(0,80)};
+    var ix=S.events.findIndex(function(x){return x.id===row.id;});if(ix>=0)S.events[ix]=row;else S.events.push(row);
+    UI.sheet=null;UI.calDay=nextDate(row,todayStr())||row.date;var d0=new Date(),dd=dparse(UI.calDay);UI.calMonth=(dd.getFullYear()-d0.getFullYear())*12+(dd.getMonth()-d0.getMonth());
+    save();render();toast(ix>=0?'予定を保存しました':'予定を追加しました');return;
   }
   if(f==='report'){
     if(REPORT.busy)return;REPORT.busy=true;render();

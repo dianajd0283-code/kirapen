@@ -1,6 +1,6 @@
 /* キラペン service worker: アプリをオフラインでも開けるようにする。
    画像やファイルを更新したら VERSION の数字を1つ上げてください。 */
-var VERSION = 'kirapen-9';
+var VERSION = 'kirapen-10';
 var CORE = [
   './', 'index.html', 'css/app.css', 'js/cloud.js', 'js/app.js', 'manifest.webmanifest', 'assets/parts.json',
   'assets/char/base.webp', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png'
