@@ -158,6 +158,8 @@ function depthSort(list){var out=[],rest=list.slice();
 function itemArt(id,it,u){var r=PARTS&&PARTS.room&&PARTS.room[id],d=ITEMS[id];
   if(r&&r.src){
     if(d.wall)return '<image href="'+esc(r.src)+'" width="'+d.W+'" height="'+d.h+'" preserveAspectRatio="xMidYMax meet"/>';
+    if(r.box){var o=P(it.gx,it.gy),w0=d.w,d0=d.d,bx=r.box,img='<image href="'+esc(r.src)+'" x="'+(bx[0]-(w0-d0)*TW/4).toFixed(2)+'" y="'+bx[1]+'" width="'+bx[2]+'" height="'+bx[3]+'"/>';
+      var cx=o[0]+(it.flip?(d0-w0):(w0-d0))*TW/4;return '<g transform="translate('+cx.toFixed(2)+' '+o[1].toFixed(2)+')'+(it.flip?' scale(-1 1)':'')+'">'+img+'</g>';}
     var dm=dims(id,it),b=P(it.gx+dm.w,it.gy+dm.d),wpx=(dm.w+dm.d)*TW/2*(r.scale||1.1),hpx=wpx*(r.ratio||1),cx=(P(it.gx+dm.w,it.gy)[0]+P(it.gx,it.gy+dm.d)[0])/2;
     return '<g transform="translate('+cx+' '+(b[1]+(r.dy||0))+')'+(it.flip?' scale(-1 1)':'')+'"><image href="'+esc(r.src)+'" x="'+(-wpx/2)+'" y="'+(-hpx)+'" width="'+wpx+'" height="'+hpx+'"/></g>';}
   return d.draw(it,it.color||d.def.color,u);
@@ -202,7 +204,8 @@ function roomSVG(opts){
 }
 function thumb(id){var d=ITEMS[id],it=JSON.parse(JSON.stringify(S.room.items[id]));PHOTO=S.room.photo||null;var u='t'+id+(++counter);
   if(d.wall)return '<svg viewBox="-8 -8 '+(d.W+16)+' '+(d.h+16)+'" aria-hidden="true">'+itemArt(id,it,u)+'</svg>';
-  it.gx=0;it.gy=0;it.flip=false;var a=P(0,d.d),b=P(d.w,0),c=P(d.w,d.d),top=P(0,0)[1]-d.hgt-6;
+  it.gx=0;it.gy=0;it.flip=false;var ra=PARTS&&PARTS.room&&PARTS.room[id];if(ra&&ra.box){var o=P(0,0),bx=ra.box;return '<svg viewBox="'+(o[0]+bx[0]-(d.w-d.d)*TW/4-2)+' '+(o[1]+bx[1]-2)+' '+(bx[2]+4)+' '+(bx[3]+4)+'" aria-hidden="true">'+itemArt(id,it,u)+'</svg>';}
+  var a=P(0,d.d),b=P(d.w,0),c=P(d.w,d.d),top=P(0,0)[1]-d.hgt-6;
   return '<svg viewBox="'+(a[0]-6)+' '+top+' '+(b[0]-a[0]+12)+' '+(c[1]-top+6)+'" aria-hidden="true">'+itemArt(id,it,u)+'</svg>';}
 
 /* ================= State ================= */
@@ -303,7 +306,7 @@ function vDecoPanel(){
   if(UI.sel){
     var isChar=UI.sel==='char',d=isChar?null:ITEMS[UI.sel],it=isChar?null:S.room.items[UI.sel];
     h+='<div class="selbar"><div class="row between"><b>'+(isChar?'わたしのキャラ':esc(d.name))+'</b>'+'<span class="row" style="gap:6px">'+(isChar||!d.wall?'<button class="mini" type="button" data-act="deco-flip">向きを変える</button>':'<button class="mini" type="button" data-act="deco-side">反対のかべへ</button>')+(isChar?'':'<button class="mini" type="button" data-act="deco-toggle" data-v="'+UI.sel+'">片付ける</button>')+'</span></div>';
-    if(!isChar&&d.rc){h+='<div class="swrow">';var list=COLORS.concat(['#F7B8CF','#BFD3F5','#FFFFFF']);S.oshis.forEach(function(o){if(list.indexOf(o.color)<0)list.unshift(o.color);});list.forEach(function(c){h+='<button type="button" class="sw'+(it.color===c?' on':'')+'" style="background:'+c+'" data-act="deco-color" data-v="'+c+'" aria-label="色 '+c+'"></button>';});h+='</div>';}
+    if(!isChar&&d.rc&&!(PARTS.room&&PARTS.room[UI.sel]&&PARTS.room[UI.sel].src)){h+='<div class="swrow">';var list=COLORS.concat(['#F7B8CF','#BFD3F5','#FFFFFF']);S.oshis.forEach(function(o){if(list.indexOf(o.color)<0)list.unshift(o.color);});list.forEach(function(c){h+='<button type="button" class="sw'+(it.color===c?' on':'')+'" style="background:'+c+'" data-act="deco-color" data-v="'+c+'" aria-label="色 '+c+'"></button>';});h+='</div>';}
     if(UI.sel==='frame')h+='<label class="btn sm" for="photo-in" style="align-self:flex-start">'+(S.room.photo?'写真を変える':'写真を選ぶ')+'</label><input type="file" id="photo-in" accept="image/*" hidden><p class="small muted" style="margin:0">自分で撮ったグッズや会場の外の写真を飾れます。アイドル本人の写真は使わないでね。</p>';
     if(isChar)h+='<p class="small muted" style="margin:0">服や髪型は「着せ替え・推し」タブで変えられます。</p>';
     h+='</div>';
