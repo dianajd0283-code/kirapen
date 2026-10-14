@@ -135,13 +135,14 @@ textarea.input{height:120px;padding:12px 14px;font-family:ui-monospace,Menlo,mon
 .mini{white-space:nowrap;flex-shrink:0}
 
 /* Splash (brand screen, same look in light and dark) */
-#splash{position:fixed;inset:0;z-index:50;background:#D6246E;color:#FFFFFF;display:flex;align-items:center;justify-content:center;transition:opacity .45s ease,visibility .45s ease}
+#splash{position:fixed;inset:0;z-index:50;background:radial-gradient(circle at 50% 38%,#FFF1F6 0%,#FBD3E0 62%);color:#5A3A57;display:flex;align-items:center;justify-content:center;transition:opacity .45s ease,visibility .45s ease}
 #splash.hide{opacity:0;visibility:hidden}
+.splash-logo{width:132px;height:132px;border-radius:30px;box-shadow:0 10px 28px rgba(214,36,110,.18);margin-bottom:10px}
 .splash-in{display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 24px}
-.splash-name{font-family:var(--font-display);font-weight:700;font-size:40px;letter-spacing:.08em;line-height:1.2}
-.splash-tag{font-size:14px;opacity:.9;letter-spacing:.04em}
-.splash-bar{width:160px;height:6px;border-radius:3px;background:rgba(255,255,255,.28);overflow:hidden;margin-top:18px}
-.splash-bar i{display:block;height:100%;width:30%;border-radius:3px;background:#FFFFFF;transition:width .35s ease}
+.splash-name{font-family:var(--font-display);font-weight:700;font-size:40px;letter-spacing:.08em;line-height:1.2;color:#C2457C}
+.splash-tag{font-size:14px;color:#8A6A86;letter-spacing:.04em}
+.splash-bar{width:160px;height:6px;border-radius:3px;background:rgba(255,255,255,.7);overflow:hidden;margin-top:18px}
+.splash-bar i{display:block;height:100%;width:30%;border-radius:3px;background:linear-gradient(90deg,#F7A8C6,#C9B6F2);transition:width .35s ease}
 #splash.done .splash-bar i{width:100%}
 @media (prefers-reduced-motion: no-preference){
   .splash-logo{animation:twinkle 1.6s ease-in-out infinite}
