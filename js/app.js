@@ -461,14 +461,17 @@ function ekName(k){for(var i=0;i<EKINDS.length;i++)if(EKINDS[i][0]===k)return EK
 function oshiColor(n){var o=S.oshis.filter(function(x){return x.name===n;})[0];return o?o.color:'var(--accent)';}
 function dstr(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 function dparse(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
-function eventsOn(day){return S.events.filter(function(e){return e.date===day||(e.kind==='bday'&&e.date.slice(5)===day.slice(5)&&e.date<=day);}).sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99');});}
-function nextDate(e,today){if(e.kind!=='bday')return e.date>=today?e.date:null;var y=+today.slice(0,4),d=y+e.date.slice(4);if(d<today)d=(y+1)+e.date.slice(4);return d<e.date?e.date:d;}
+function evDates(e){return e.kind!=='bday'&&e.dates&&e.dates.length?e.dates:[e.date];}
+function dayNo(e,day){var ds=evDates(e);return ds.length>1&&ds.indexOf(day)>=0?(ds.indexOf(day)+1)+'日目':'';}
+function eventsOn(day){return S.events.filter(function(e){return (e.kind!=='bday'&&evDates(e).indexOf(day)>=0)||(e.kind==='bday'&&e.date.slice(5)===day.slice(5)&&e.date<=day);}).sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99');});}
+function nextDate(e,today){if(e.kind!=='bday'){var ds=evDates(e).filter(function(x){return x>=today;});return ds[0]||null;}var y=+today.slice(0,4),d=y+e.date.slice(4);if(d<today)d=(y+1)+e.date.slice(4);return d<e.date?e.date:d;}
 function upcoming(n){var t=todayStr();return S.events.map(function(e){return {e:e,d:nextDate(e,t)};}).filter(function(x){return x.d;}).sort(function(a,b){return a.d===b.d?(a.e.time||'99').localeCompare(b.e.time||'99'):a.d<b.d?-1:1;}).slice(0,n);}
 function daysTo(d){return Math.round((dparse(d)-dparse(todayStr()))/864e5);}
 function untilTxt(d){var n=daysTo(d);return n===0?'今日！':n===1?'明日':'あと'+n+'日';}
 function mdTxt(d){var x=dparse(d);return (x.getMonth()+1)+'/'+x.getDate()+'（'+'日月火水木金土'[x.getDay()]+'）';}
-function evRow(e,d){
-  return '<button type="button" class="ev" data-act="ev-edit" data-v="'+e.id+'"><span class="ev-bar" style="background:'+(e.oshi?oshiColor(e.oshi):'var(--accent)')+'"></span><span class="ev-main"><b>'+esc(e.title)+'</b><span class="small muted">'+[d?mdTxt(d):'',e.time?esc(e.time):'',e.oshi?esc(e.oshi):''].filter(Boolean).join('・')+(e.memo&&!d?'<br>'+esc(e.memo):'')+'</span></span>'+(d?'<span class="ev-cd'+(daysTo(d)<=1?' hot':'')+'">'+untilTxt(d)+'</span>':'<span class="kind">'+ekName(e.kind)+'</span>')+'</button>';
+function evRow(e,d,day){
+  var n=evDates(e).length,no=dayNo(e,d||day);
+  return '<button type="button" class="ev" data-act="ev-edit" data-v="'+e.id+'"><span class="ev-bar" style="background:'+(e.oshi?oshiColor(e.oshi):'var(--accent)')+'"></span><span class="ev-main"><b>'+esc(e.title)+(no?' <span class="kind">'+no+(n>1?'／全'+n+'日':'')+'</span>':'')+'</b><span class="small muted">'+[d?mdTxt(d):'',e.time?esc(e.time):'',e.oshi?esc(e.oshi):''].filter(Boolean).join('・')+(e.memo&&!d?'<br>'+esc(e.memo):'')+'</span></span>'+(d?'<span class="ev-cd'+(daysTo(d)<=1?' hot':'')+'">'+untilTxt(d)+'</span>':'<span class="kind">'+ekName(e.kind)+'</span>')+'</button>';
 }
 function nextBanner(){
   var u=upcoming(1)[0];if(!u)return '';
@@ -489,7 +492,7 @@ function vCal(){
   var list=eventsOn(sel);
   h+='<p class="small muted" style="margin:-8px 0 0;text-align:center">日付をタップすると、その日に予定を追加できます</p>';
   h+='<div class="stack" id="day-list" style="scroll-margin-top:16px"><div class="row between"><h3>'+mdTxt(sel)+'</h3><button class="btn primary sm" type="button" data-act="ev-new" data-v="'+sel+'">＋ この日に追加</button></div>';
-  h+=list.length?list.map(function(e){return evRow(e,null);}).join(''):'<p class="small muted" style="margin:0">この日の予定はありません。</p>';
+  h+=list.length?list.map(function(e){return evRow(e,null,sel);}).join(''):'<p class="small muted" style="margin:0">この日の予定はありません。</p>';
   h+='</div>';
   var up=upcoming(8);
   h+='<div class="stack"><h3>これからの予定</h3>'+(up.length?up.map(function(x){return evRow(x.e,x.d);}).join(''):'<div class="card" style="text-align:center"><b>まだ予定がありません</b><p class="small muted" style="margin:6px 0 0">右下の「予定を追加」から、ライブや発売日を入れてみてね。</p></div>')+'</div>';
@@ -501,7 +504,10 @@ function vEventSheet(){
   var h='<div class="overlay" data-act="sheet-bg"><form class="sheet" data-form="ev" role="dialog" aria-label="予定"><div class="row between"><h2>'+(isNew?'予定を追加':'予定を編集')+'</h2><button class="btn sm" type="button" data-act="ev-close">閉じる</button></div>';
   h+='<label class="field"><span>なにがある？</span><input class="input" id="ev-title" maxlength="40" placeholder="例：ツアー東京公演" value="'+esc(e.title)+'"></label>';
   h+='<div class="field"><span>種類</span><div class="row wrap">';EKINDS.forEach(function(k){h+='<button type="button" class="chip'+(e.kind===k[0]?' on':'')+'" data-act="ev-kind" data-v="'+k[0]+'">'+k[1]+'</button>';});h+='</div></div>';
-  h+='<div class="row"><label class="field" style="flex:1.4"><span>日付</span><input class="input" type="date" id="ev-date" value="'+esc(e.date)+'"></label><label class="field" style="flex:1"><span>時間（なくてもOK）</span><input class="input" type="time" id="ev-time" value="'+esc(e.time)+'"></label></div>';
+  var multi=e.kind!=='bday',ds=e.dates;
+  h+='<div class="row"><label class="field" style="flex:1.4"><span>'+(multi&&ds.length>1?'1日目':'日付')+'</span><input class="input" type="date" id="ev-date" value="'+esc(ds[0])+'"></label><label class="field" style="flex:1"><span>時間（なくてもOK）</span><input class="input" type="time" id="ev-time" value="'+esc(e.time)+'"></label></div>';
+  if(multi){for(var di=1;di<ds.length;di++)h+='<div class="row"><label class="field" style="flex:1"><span>'+(di+1)+'日目</span><input class="input" type="date" id="ev-dx-'+di+'" value="'+esc(ds[di])+'"></label><button class="mini" type="button" style="align-self:flex-end;min-height:50px" data-act="ev-dx-del" data-v="'+di+'" aria-label="'+(di+1)+'日目を消す">✕</button></div>';
+    h+='<button class="btn sm" type="button" data-act="ev-dx-add" style="align-self:flex-start">＋ 日付を追加（何日かあるとき）</button>';}
   if(e.kind==='bday')h+='<p class="small muted" style="margin:0">誕生日・記念日は、毎年同じ日に表示されます。</p>';
   if(S.oshis.length){h+='<div class="field"><span>どの推し？</span><div class="row wrap"><button type="button" class="chip'+(!e.oshi?' on':'')+'" data-act="ev-oshi" data-v="">えらばない</button>';S.oshis.forEach(function(o){h+='<button type="button" class="chip'+(e.oshi===o.name?' on':'')+'" data-act="ev-oshi" data-v="'+esc(o.name)+'"><span class="dot" style="background:'+o.color+'"></span>'+esc(o.name)+'</button>';});h+='</div></div>';}
   h+='<label class="field"><span>メモ（なくてもOK）</span><input class="input" id="ev-memo" maxlength="80" placeholder="例：開場17時、グッズ列は15時から" value="'+esc(e.memo)+'"></label>';
@@ -628,8 +634,10 @@ function act(a,d){
     case 'cal-day':var had=UI.calDay===v,evs0=eventsOn(v);UI.calDay=v;
       if(had||!evs0.length){act('ev-new',{v:v});break;}
       render();var dl=document.getElementById('day-list');if(dl)dl.scrollIntoView({behavior:'smooth',block:'start'});break;
-    case 'ev-new':UI.ev={id:null,title:'',kind:'live',date:v||UI.calDay||todayStr(),time:'',oshi:S.oshis[0]?S.oshis[0].name:'',memo:''};UI.evDel=false;UI.sheet='ev';render();setTimeout(function(){var x=document.getElementById('ev-title');if(x)x.focus();},50);break;
-    case 'ev-edit':var ee=S.events.filter(function(x){return x.id===v;})[0];if(!ee)return;UI.ev=JSON.parse(JSON.stringify(ee));UI.ev.time=UI.ev.time||'';UI.ev.memo=UI.ev.memo||'';UI.ev.oshi=UI.ev.oshi||'';UI.evDel=false;UI.sheet='ev';render();break;
+    case 'ev-new':UI.ev={id:null,title:'',kind:'live',dates:[v||UI.calDay||todayStr()],time:'',oshi:S.oshis[0]?S.oshis[0].name:'',memo:''};UI.evDel=false;UI.sheet='ev';render();setTimeout(function(){var x=document.getElementById('ev-title');if(x)x.focus();},50);break;
+    case 'ev-edit':var ee=S.events.filter(function(x){return x.id===v;})[0];if(!ee)return;UI.ev=JSON.parse(JSON.stringify(ee));UI.ev.dates=evDates(ee).slice();UI.ev.time=UI.ev.time||'';UI.ev.memo=UI.ev.memo||'';UI.ev.oshi=UI.ev.oshi||'';UI.evDel=false;UI.sheet='ev';render();break;
+    case 'ev-dx-add':var dl0=UI.ev.dates[UI.ev.dates.length-1]||todayStr(),nx=dparse(dl0);nx.setDate(nx.getDate()+1);UI.ev.dates.push(dstr(nx));render();break;
+    case 'ev-dx-del':UI.ev.dates.splice(Number(v),1);render();break;
     case 'ev-close':UI.sheet=null;render();break;
     case 'ev-kind':UI.ev.kind=v;render();break;
     case 'ev-oshi':UI.ev.oshi=v||'';render();break;
@@ -712,7 +720,9 @@ document.addEventListener('input',function(e){
   else if(id==='backup-in')UI.restoreText=e.target.value;
   else if(id==='auth-email')UI.authEmail=e.target.value;
   else if(id==='auth-pw')UI.authPw=e.target.value;
-  else if(id==='ev-title'||id==='ev-date'||id==='ev-time'||id==='ev-memo'){if(UI.ev)UI.ev[id.slice(3)]=e.target.value;}
+  else if(id==='ev-date'){if(UI.ev)UI.ev.dates[0]=e.target.value;}
+  else if(id.indexOf('ev-dx-')===0){if(UI.ev)UI.ev.dates[Number(id.slice(6))]=e.target.value;}
+  else if(id==='ev-title'||id==='ev-time'||id==='ev-memo'){if(UI.ev)UI.ev[id.slice(3)]=e.target.value;}
   else if(id==='post-body'){POST.body=e.target.value;var pc=document.getElementById('post-count');if(pc)pc.textContent=POST.body.length+' / 300';}
 });
 document.addEventListener('keydown',function(e){
@@ -751,8 +761,10 @@ document.addEventListener('submit',function(e){
   if(f==='ev'){
     var ev=UI.ev,t=(ev.title||'').trim();
     if(!t){toast('なにがあるか入れてね');return;}
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(ev.date||'')){toast('日付を選んでね');return;}
-    var row={id:ev.id||uid(),title:t.slice(0,40),kind:ev.kind,date:ev.date,time:/^\d{2}:\d{2}$/.test(ev.time||'')?ev.time:'',oshi:ev.oshi||'',memo:(ev.memo||'').trim().slice(0,80)};
+    var dts=(ev.kind==='bday'?ev.dates.slice(0,1):ev.dates).filter(function(x){return /^\d{4}-\d{2}-\d{2}$/.test(x||'');});
+    if(!dts.length){toast('日付を選んでね');return;}
+    dts=dts.filter(function(x,i){return dts.indexOf(x)===i;}).sort().slice(0,14);
+    var row={id:ev.id||uid(),title:t.slice(0,40),kind:ev.kind,date:dts[0],time:/^\d{2}:\d{2}$/.test(ev.time||'')?ev.time:'',oshi:ev.oshi||'',memo:(ev.memo||'').trim().slice(0,80)};if(dts.length>1)row.dates=dts;
     var ix=S.events.findIndex(function(x){return x.id===row.id;});if(ix>=0)S.events[ix]=row;else S.events.push(row);
     UI.sheet=null;UI.calDay=nextDate(row,todayStr())||row.date;var d0=new Date(),dd=dparse(UI.calDay);UI.calMonth=(dd.getFullYear()-d0.getFullYear())*12+(dd.getMonth()-d0.getMonth());
     save();render();toast(ix>=0?'予定を保存しました':'予定を追加しました');return;
