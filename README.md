@@ -67,3 +67,7 @@ sw.js                 オフラインでも開けるようにする仕組み
 - `supabase/posts.sql` を Supabase の SQL Editor で1回実行すると、投稿・わかる・通報・ブロック・写真の保存場所ができます。
 - 3人から通報された投稿は自動で非表示になり、運営が「通報を確認」画面で 削除 / 問題なし を選べます。
 - 運営にする人は `public.admins` テーブルに user_id を入れます（SQL Editor から）。
+
+## 立体の部屋（My Room）
+- 床は 6×6 マス、かべは左（L）と右（R）。家具は `js/app.js` の `ITEMS`（w・d がマス数）。
+- ちゃっぴーの絵に差し替えるときは `assets/parts.json` の `room` に `{"bed": {"src": "assets/room/bed.webp", "scale": 1.1, "ratio": 1, "dy": 0}}` のように書く（scale：横幅の倍率、ratio：高さ÷幅、dy：上下の微調整）。
