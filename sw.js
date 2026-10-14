@@ -1,6 +1,6 @@
 /* キラペン service worker: アプリをオフラインでも開けるようにする。
    画像やファイルを更新したら VERSION の数字を1つ上げてください。 */
-var VERSION = 'kirapen-11';
+var VERSION = 'kirapen-12';
 var CORE = [
   './', 'index.html', 'css/app.css', 'js/cloud.js', 'js/app.js', 'manifest.webmanifest', 'assets/parts.json',
   'assets/char/base.webp', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png'
@@ -22,7 +22,7 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   var fresh = req.mode === 'navigate' || /(parts\.json|\.js|\.css)(\?|$)/.test(req.url);
   if (fresh) {
-    e.respondWith(fetch(req).then(function (res) {
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(function (res) {
       var copy = res.clone(); caches.open(VERSION).then(function (c) { c.put(req, copy); }); return res;
     }).catch(function () { return caches.match(req).then(function (r) { return r || caches.match('index.html'); }); }));
     return;
