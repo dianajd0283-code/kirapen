@@ -161,6 +161,16 @@
       .then(function () { return sb.from('reports').delete().eq('post_id', postId).then(ok); });
   };
 
+  /* アカウントを削除（写真を消してから、サーバーの関数でアカウントごと削除） */
+  KC.deleteAccount = function () {
+    var id = need();
+    return sb.storage.from(BUCKET).list(id, { limit: 1000 }).then(function (r) {
+      var files = (r.data || []).map(function (f) { return id + '/' + f.name; });
+      return files.length ? sb.storage.from(BUCKET).remove(files) : null;
+    }, function () {}).then(function () { return sb.rpc('delete_my_account'); })
+      .then(function (r) { if (r && r.error) throw r.error; return sb.auth.signOut(); });
+  };
+
   /* ほかの人の部屋を見る */
   KC.fetchRoom = function (id) {
     return sb.from('profiles').select('nickname,data').eq('id', id).maybeSingle()

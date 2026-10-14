@@ -130,7 +130,7 @@ function stateFromServer(sv){
   return fixState({v:1,onboarded:true,me:p.me||defMe(),oshis:p.oshis||[],room:p.room||newState().room,money:q.money||{budget:25000,records:[]},events:q.events||[]});
 }
 var S=load()||newState();
-var UI={authMode:'in',authEmail:'',authPw:'',authBusy:false,conflict:null,tab:'room',step:0,deco:false,sel:null,pane:'items',month:0,sheet:null,recAmount:'',recMemo:'',recDate:todayStr(),recCat:'goods',recOshi:'',del:null,budgetEdit:false,reset:false,oshiDraft:'',oshiColor:COLORS[0],shareURL:null,backup:null,restoreText:'',calMonth:0,calDay:null,ev:null,evDel:false};
+var UI={authMode:'in',authEmail:'',authPw:'',authBusy:false,conflict:null,tab:'room',step:0,deco:false,sel:null,pane:'items',month:0,sheet:null,recAmount:'',recMemo:'',recDate:todayStr(),recCat:'goods',recOshi:'',del:null,budgetEdit:false,reset:false,oshiDraft:'',oshiColor:COLORS[0],shareURL:null,backup:null,restoreText:'',calMonth:0,calDay:null,ev:null,evDel:false,doc:null,agree:false,delAcct:0};
 var toastT;
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true;},2200);}
 
@@ -281,6 +281,7 @@ function vSettings(){
   h+=charEditor()+'<div class="stack"><h3>推し</h3>'+oshiEditor('set')+'</div>';
   h+=vTheme();
   h+=vAccount();
+  h+=docLinks();
   h+='<div class="card stack"><h3>データのバックアップ</h3><p class="small muted" style="margin:0">データはこのスマホのブラウザの中に保存されます。機種変更の前や、念のための控えに、バックアップの文字をメモアプリなどに保存しておいてね。</p>';
   if(UI.backup==='out'){var txt=JSON.stringify(Object.assign({},S,{room:Object.assign({},S.room,{photo:null})}));h+='<textarea class="input" id="backup-out" readonly>'+esc(txt)+'</textarea><div class="row"><button class="btn primary" style="flex:1" type="button" data-act="backup-copy">コピーする</button><button class="btn" style="flex:1" type="button" data-act="backup-close">閉じる</button></div><p class="small muted" style="margin:0">写真フレームの写真はバックアップに含まれません。</p>';}
   else if(UI.backup==='in')h+='<textarea class="input" id="backup-in" placeholder="保存しておいたバックアップの文字を貼り付けてね">'+esc(UI.restoreText)+'</textarea><div class="row"><button class="btn primary" style="flex:1" type="button" data-act="backup-restore">読み込む</button><button class="btn" style="flex:1" type="button" data-act="backup-close">やめる</button></div>';
@@ -298,7 +299,10 @@ function vAccount(){
   h+='<p class="small" style="margin:0">ログイン中：'+esc(u.email||'')+'</p><p class="small" style="margin:0;font-weight:700;color:'+(st==='error'?'var(--warn)':'var(--ok)')+'">'+stTxt+'</p>';
   h+='<label class="field"><span>My Roomのリンク（送ると部屋を見てもらえます）</span><input class="input" id="room-link" readonly value="'+esc(roomLink())+'"></label>';
   h+='<div class="row"><button class="btn primary" style="flex:1" type="button" data-act="link-copy">リンクをコピー</button><button class="btn" style="flex:1" type="button" data-act="auth-out">ログアウト</button></div>';
-  return h+'<p class="small muted" style="margin:0">貯金箱のお金の記録は、ログインしても本人しか見られません。</p></div>';
+  h+='<p class="small muted" style="margin:0">貯金箱のお金の記録と予定は、ログインしても本人しか見られません。</p>';
+  if(UI.delAcct===0)h+='<button class="btn ghost" type="button" data-act="acct-del">アカウントを削除</button>';
+  else h+='<div class="stack" style="gap:8px"><p class="small" style="margin:0;color:var(--warn);font-weight:700">アカウントと、サーバーにある部屋・投稿・写真・貯金箱・予定がすべて消えて、元に戻せません。</p><div class="row"><button class="btn" style="flex:1" type="button" data-act="acct-del-no">やめる</button><button class="btn" style="flex:1;border-color:var(--warn);color:var(--warn)" type="button" data-act="acct-del"'+(UI.delAcct===2?' disabled':'')+'>'+(UI.delAcct===2?'削除しています…':'本当に削除する')+'</button></div></div>';
+  return h+'</div>';
 }
 function vAuthSheet(){
   var up=UI.authMode==='up';
@@ -306,6 +310,7 @@ function vAuthSheet(){
   h+='<div class="seg"><button type="button" class="'+(!up?'on':'')+'" data-act="auth-mode" data-v="in">ログイン</button><button type="button" class="'+(up?'on':'')+'" data-act="auth-mode" data-v="up">新規登録</button></div>';
   h+='<label class="field"><span>メールアドレス</span><input class="input" id="auth-email" type="email" autocomplete="email" inputmode="email" value="'+esc(UI.authEmail)+'"></label>';
   h+='<label class="field"><span>パスワード（6文字以上）</span><input class="input" id="auth-pw" type="password" autocomplete="'+(up?'new-password':'current-password')+'" value="'+esc(UI.authPw)+'"></label>';
+  if(up)h+='<label class="agree"><input type="checkbox" id="agree"'+(UI.agree?' checked':'')+'><span><button type="button" class="link" data-act="doc" data-v="terms">利用規約</button>・<button type="button" class="link" data-act="doc" data-v="privacy">プライバシーポリシー</button>・<button type="button" class="link" data-act="doc" data-v="rules">投稿ルール</button>を読んで同意します。13歳未満の方は登録できません。</span></label>';
   h+='<button class="btn primary block" type="submit"'+(UI.authBusy?' disabled':'')+'>'+(UI.authBusy?'少し待ってね…':(up?'登録してログイン':'ログイン'))+'</button>';
   if(up)h+='<p class="small muted" style="margin:0">登録すると、今この端末にあるMy Roomがサーバーに保存されます。</p>';
   return h+'</form></div>';
@@ -360,7 +365,7 @@ function vPostSheet(){
   h+='<div class="field"><span>写真（なくてもOK）</span><div class="photo-pick">'+(POST.img?'<img src="'+POST.img+'" alt="選んだ写真"><button class="mini" type="button" data-act="post-img-clear">写真を外す</button>':'<label class="btn sm" for="post-file">写真を選ぶ</label>')+'<input type="file" id="post-file" accept="image/*" hidden></div></div>';
   h+='<label class="field"><span>ひとこと</span><textarea class="input post-in" id="post-body" maxlength="300" placeholder="今日の推し活をひとこと…">'+esc(POST.body)+'</textarea><span class="counter num" id="post-count">'+POST.body.length+' / 300</span></label>';
   if(S.oshis.length){h+='<div class="field"><span>どの推し？</span><div class="row wrap"><button type="button" class="chip'+(!POST.oshi?' on':'')+'" data-act="post-oshi" data-v="">えらばない</button>';S.oshis.forEach(function(o){h+='<button type="button" class="chip'+(POST.oshi===o.name?' on':'')+'" data-act="post-oshi" data-v="'+esc(o.name)+'"><span class="dot" style="background:'+o.color+'"></span>'+esc(o.name)+'</button>';});h+='</div></div>';}
-  h+='<div class="banner" style="display:block"><b>投稿できないもの</b><br>ライブ中に撮った写真・動画、アイドル本人の写真や画像（公式画像のスクリーンショットもNG）、悪口や個人情報。守られていない投稿は削除することがあります。</div>';
+  h+='<div class="banner" style="display:block"><b>投稿できないもの</b><br>ライブ中に撮った写真・動画、アイドル本人の写真や画像（公式画像のスクリーンショットもNG）、悪口や個人情報。守られていない投稿は削除することがあります。<br><button type="button" class="link" data-act="doc" data-v="rules">投稿ルールを全部読む</button></div>';
   return h+'<button class="btn primary block" type="submit" style="min-height:54px;font-size:16px"'+(POST.busy?' disabled':'')+'>'+(POST.busy?'投稿しています…':'投稿する')+'</button></form></div>';
 }
 function vReportSheet(){
@@ -418,7 +423,7 @@ function vRecSheet(){
 function vShare(){return '<div class="overlay center" data-act="share-bg"><div class="sheet" role="dialog" aria-label="シェア画像"><div class="row between"><h2>シェア画像</h2><button class="btn sm" type="button" data-act="share-close">閉じる</button></div>'+(UI.shareURL?'<img class="share-img" src="'+UI.shareURL+'" alt="My Roomのシェア画像"><p class="small muted" style="margin:0">画像を長押し（パソコンでは右クリック）して保存し、TikTokやXでシェアしてね。</p>':'<p class="muted">画像をつくっています…</p>')+'</div></div>';}
 
 /* ================= Theme（アプリの色） ================= */
-var THEMES=[['#F7A8C6','パステルピンク'],['#C9B6F2','ラベンダー'],['#A8D8F0','みずいろ'],['#A6E3C8','ミント'],['#F6DE8D','レモン'],['#F9C0A0','ピーチ'],['#B9C2E8','ブルーグレー']];
+var THEMES=[['#F7A8C6','ピンク'],['#C9B6F2','ラベンダー'],['#A8D8F0','みずいろ'],['#A6E3C8','ミント'],['#F6DE8D','レモン'],['#F9C0A0','ピーチ'],['#B9C2E8','ブルーグレー']];
 var DEF_THEME='#F7A8C6';
 function hsl2hex(h,s,l){s/=100;l/=100;var k=function(n){return (n+h/30)%12;},a=s*Math.min(l,1-l),f=function(n){return l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));};return rgb2hex([f(0)*255,f(8)*255,f(4)*255]);}
 function hex2hsl(hex){var c=hex2rgb(hex).map(function(v){return v/255;}),mx=Math.max.apply(0,c),mn=Math.min.apply(0,c),l=(mx+mn)/2,h=0,s=0,d=mx-mn;
@@ -504,11 +509,57 @@ function vEventSheet(){
   return h+'</form></div>';
 }
 
+/* ================= 投稿ルール・利用規約・プライバシーポリシー ================= */
+var CONTACT='';/* お問い合わせ先（メールアドレスなど）。決まったらここに書く */
+var DOC_DATE='2026年10月14日';
+var DOCS={
+ rules:{title:'投稿ルール',lead:'キラペンは、推しが好きな人どうしが気持ちよく推し活をシェアするための場所です。投稿する前に、ここだけは読んでね。',sec:[
+  {h:'投稿していいもの（例）',li:['自分で撮ったグッズ・アクスタ・推し色コーデの写真','推し部屋や祭壇など、自分の部屋の写真（住所がわかるものが写らないように）','撮影OKの場所で撮った、会場の外の看板やフラワースタンド','ライブの感想、推しへの気持ち、推し活の記録']},
+  {h:'投稿してはいけないもの',li:['ライブ・イベント中に撮った写真や動画（撮影OKと案内された場合をのぞく）','アイドル本人の写真、公式の画像や動画、テレビ・配信・雑誌のスクリーンショット','ほかの人が撮った写真やイラストを、許可なく使ったもの','アイドルの私生活の情報（自宅、移動先、プライベートでの目撃情報など）、出待ち・入り待ちをすすめる内容','チケットやグッズの売り買い・譲り合いの呼びかけ（定価以上の転売は法律で禁止されています）','悪口、からかい、いやがらせ、ほかのファンやグループへの攻撃','名前・住所・学校・電話番号・顔など、自分やほかの人の個人情報','性的なもの、暴力的なもの、こわがらせるもの','宣伝やスパム、ほかのサービスへのしつこい勧誘']},
+  {h:'守られていない投稿を見つけたら',p:['投稿の「…」から「通報」してください。だれが通報したかは相手に伝わりません。','3人から通報された投稿は自動で見えなくなり、運営が確認して削除するかどうかを決めます。','いやな気持ちになる人がいたら、「この人をブロック」でその人の投稿が見えなくなります。']},
+  {h:'ルールを守らなかったとき',p:['投稿を削除したり、くり返す場合はアカウントを使えなくしたりすることがあります。']}
+ ]},
+ terms:{title:'利用規約',lead:'この利用規約は、キラペン（以下「本アプリ」）を使うときのルールです。本アプリを使った時点で、この規約に同意したものとします。',sec:[
+  {h:'第1条　本アプリについて',p:['本アプリは、個人が運営している推し活アプリです。アイドル本人や所属事務所、レコード会社などの公式アプリではなく、それらとは関係ありません。']},
+  {h:'第2条　使える人',p:['13歳未満の方は、アカウントを作ったり投稿したりできません。','18歳未満の方は、保護者の方の同意を得てから使ってください。']},
+  {h:'第3条　アカウント',li:['登録するメールアドレスは、自分のものを使ってください。','パスワードは自分で管理し、ほかの人に教えないでください。','1人で複数のアカウントを作って、ほかの人をまどわせることはしないでください。']},
+  {h:'第4条　禁止していること',li:['「投稿ルール」で禁止しているものを投稿すること','法律や公の秩序に反すること','ほかの人の著作権・肖像権・プライバシーなどの権利を侵害すること','本アプリやサーバーに負担をかけたり、こわしたりすること','ほかの人になりすますこと','本アプリを使って商売・勧誘をすること','そのほか、運営が適切でないと判断すること']},
+  {h:'第5条　投稿の扱い',li:['投稿した写真や文章の権利は、投稿した人のものです。','運営は、本アプリの中で表示するために必要な範囲で、投稿を使わせてもらいます（サイズの変更など）。','自分の投稿は、いつでも自分で削除できます。','禁止していることにあたる投稿は、予告なく削除することがあります。']},
+  {h:'第6条　利用の停止',p:['この規約や投稿ルールを守らない場合、運営は予告なく投稿を削除したり、アカウントを使えなくしたりすることがあります。']},
+  {h:'第7条　アプリの変更・終了',p:['運営は、本アプリの内容を変えたり、提供をお休み・終了したりすることがあります。終了するときは、できるだけ前もってアプリの中でお知らせします。','大切なデータは、「データのバックアップ」で控えをとっておいてください。']},
+  {h:'第8条　責任について',p:['運営は、本アプリができるだけ正しく動くよう努めますが、不具合が起きないことや、データが消えないことまでは約束できません。','利用者どうしのトラブルは、当事者どうしで解決してください。ただし運営に故意または重い過失がある場合はこの限りではありません。']},
+  {h:'第9条　規約の変更',p:['この規約は、必要に応じて変えることがあります。大事な変更はアプリの中でお知らせします。変更後に本アプリを使った場合は、変更に同意したものとします。']},
+  {h:'第10条　準拠法',p:['この規約は日本の法律にもとづいて解釈されます。']}
+ ]},
+ privacy:{title:'プライバシーポリシー',lead:'キラペン（以下「本アプリ」）が、どんな情報をあずかり、どう使うかの説明です。',sec:[
+  {h:'1. あずかる情報',li:['ログインに使うメールアドレス（パスワードは暗号化されて保存され、運営も見ることはできません）','ニックネーム、キャラクター、My Room の飾り、推しの名前と色、アプリの色','投稿した写真と文章、「わかる」、ブロック、通報の記録','貯金箱の記録と予定（本人しか見られません）']},
+  {h:'2. ほかの人に見えるもの',p:['ニックネーム、キャラクター、My Room、推し、投稿は、本アプリを使うほかの人や、部屋のリンクを開いた人に見えます。','メールアドレス、貯金箱の記録、予定、ブロック、通報は、ほかの人には見えません。']},
+  {h:'3. 使う目的',li:['ログインや、データの保存・引き継ぎのため','My Room や投稿を表示するため','通報された投稿を確認するなど、安心して使える場所にするため','不具合を直したり、アプリをよくしたりするため']},
+  {h:'4. 広告と解析',p:['本アプリには広告はありません。利用状況を調べる解析ツールも使っていません。']},
+  {h:'5. 情報をあずける先',p:['本アプリは、次のサービスを使って動いています。これらのサービスは外国（アメリカなど）にサーバーがある場合があります。'],li:['Supabase：アカウントとデータ・写真の保存','GitHub Pages：アプリの配信','Google Fonts・jsDelivr：文字のデザインやプログラムの読み込み（このときIPアドレスなどの接続情報が送られます）']},
+  {h:'6. ほかの人に渡すこと',p:['法律で必要な場合などをのぞき、本人の同意なく、あずかった情報をほかの人や会社に渡したり売ったりしません。']},
+  {h:'7. この端末に保存されるもの',p:['キャラクターや部屋、貯金箱、予定などは、使っているスマホのブラウザの中にも保存されます。ブラウザのデータを消すと、この端末からは消えます（ログインしていればサーバーから戻せます）。']},
+  {h:'8. 削除',p:['投稿はいつでも自分で削除できます。','「着せ替え・推し」タブの「アカウントを削除」から、アカウントと、サーバーにあるデータ・投稿・写真をすべて削除できます。']},
+  {h:'9. 変更',p:['このポリシーを変えるときは、アプリの中でお知らせします。']}
+ ]}
+};
+function vDoc(){
+  var d=DOCS[UI.doc];if(!d)return '';
+  var h='<div class="row between"><h1>'+d.title+'</h1><button class="mini" type="button" data-act="doc-close">戻る</button></div><p style="margin:0">'+d.lead+'</p>';
+  d.sec.forEach(function(s){h+='<section class="doc-sec"><h3>'+s.h+'</h3>'+(s.p||[]).map(function(x){return '<p>'+x+'</p>';}).join('')+(s.li?'<ul>'+s.li.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>':'')+'</section>';});
+  h+='<section class="doc-sec"><h3>お問い合わせ</h3><p>'+(CONTACT?esc(CONTACT):'お問い合わせ先は準備中です。')+'</p></section>';
+  h+='<p class="small muted" style="margin:0">'+DOC_DATE+' 制定</p>';
+  var other=Object.keys(DOCS).filter(function(k){return k!==UI.doc;});
+  return h+'<div class="row wrap">'+other.map(function(k){return '<button class="mini" type="button" data-act="doc" data-v="'+k+'">'+DOCS[k].title+'</button>';}).join('')+'</div>';
+}
+function docLinks(){return '<div class="card stack"><h3>ルールと規約</h3><div class="row wrap">'+Object.keys(DOCS).map(function(k){return '<button class="mini" type="button" data-act="doc" data-v="'+k+'">'+DOCS[k].title+'</button>';}).join('')+'</div></div>';}
+
 /* ================= Render ================= */
 function render(){
   counter=0;if(!PARTS)return;
   var app=document.getElementById('app'),nav=document.getElementById('nav'),layer=document.getElementById('layer');
   applyTheme(VISIT&&VISIT.data&&VISIT.data.data&&VISIT.data.data.room?VISIT.data.data.room.theme:S.room.theme);
+  if(UI.doc){app.innerHTML=vDoc();nav.hidden=true;layer.innerHTML='';return;}
   if(VISIT){app.innerHTML=vVisit();nav.hidden=true;layer.innerHTML='';return;}
   if(!S.onboarded){app.innerHTML=vOnboard();nav.hidden=true;}
   else{nav.hidden=false;['room','feed','cal','money','settings'].forEach(function(t){document.getElementById('nav-'+t).classList.toggle('on',UI.tab===t);});app.innerHTML=UI.tab==='room'?vRoom():UI.tab==='feed'?vFeed():UI.tab==='cal'?vCal():UI.tab==='money'?vMoney():vSettings();}
@@ -566,6 +617,11 @@ function act(a,d){
     case 'oshi-add':addOshi();break;
     case 'oshi-del':S.oshis=S.oshis.filter(function(o){return o.id!==v;});save();render();break;
     case 'tab':UI.tab=v;UI.deco=false;UI.sel=null;UI.del=null;UI.reset=false;UI.backup=null;FEED.menu=null;FEED.confirm=null;render();window.scrollTo(0,0);if(v==='feed'){if(!FEED.loaded)loadFeed(true);if(cloudUser()&&!window.KC.isAdmin)window.KC.checkAdmin();}break;
+    case 'doc':UI.docBack={sheet:UI.sheet,y:window.scrollY};UI.sheet=null;UI.doc=v;render();window.scrollTo(0,0);break;
+    case 'doc-close':var bk=UI.docBack||{};UI.doc=null;UI.sheet=bk.sheet||null;render();window.scrollTo(0,bk.y||0);break;
+    case 'acct-del-no':UI.delAcct=0;render();break;
+    case 'acct-del':if(UI.delAcct===0){UI.delAcct=1;render();return;}if(UI.delAcct===2)return;UI.delAcct=2;render();
+      window.KC.deleteAccount().then(function(){UI.delAcct=0;try{localStorage.removeItem('kirapen-v1');}catch(e){}S=newState();saveLocal();UI.step=0;UI.tab='room';render();window.scrollTo(0,0);toast('アカウントを削除しました');},function(e){UI.delAcct=1;render();toast(window.KC.message(e));});break;
     case 'theme':S.room.theme=v;save();render();break;
     case 'cal-month':UI.calMonth+=Number(v);render();break;
     case 'cal-day':UI.calDay=v;render();break;
@@ -666,6 +722,7 @@ document.addEventListener('submit',function(e){
     var em=(UI.authEmail||'').trim(),pw=UI.authPw||'';
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){toast('メールアドレスを確かめてね');return;}
     if(pw.length<6){toast('パスワードは6文字以上にしてね');return;}
+    if(UI.authMode==='up'&&!UI.agree){toast('利用規約などに同意してね');return;}
     UI.authBusy=true;render();
     var p=UI.authMode==='up'?window.KC.signUp(em,pw):window.KC.signIn(em,pw);
     p.then(function(r){UI.authBusy=false;UI.authPw='';
@@ -712,6 +769,7 @@ document.addEventListener('submit',function(e){
   }
 });
 document.addEventListener('change',function(e){
+  if(e.target.id==='agree'){UI.agree=e.target.checked;return;}
   if(e.target.id==='post-file'&&e.target.files&&e.target.files[0]){
     resizeToBlob(e.target.files[0],function(b,url){if(!b){toast('この画像は読み込めませんでした');return;}POST.blob=b;POST.img=url;render();});return;}
   if(e.target.id!=='photo-in'||!e.target.files||!e.target.files[0])return;
@@ -768,7 +826,7 @@ function syncAfterLogin(){
 function boot(p){
   PARTS=p;SLOT={};PARTS.slots.forEach(function(s){SLOT[s.id]=s;});
   if(!findItem('hair',S.me.layers.hair)&&slotItems('hair')[0])S.me.layers.hair=slotItems('hair')[0].id;
-  var rid=null;try{rid=new URLSearchParams(location.search).get('room');}catch(e){}
+  var rid=null;try{rid=new URLSearchParams(location.search).get('room');var dq=new URLSearchParams(location.search).get('doc');if(dq&&DOCS[dq])UI.doc=dq;}catch(e){}
   if(rid&&/^[0-9a-f-]{36}$/i.test(rid)){
     VISIT={loading:true};
     var go=function(){if(!cloudOn()){VISIT={loading:false,error:'今はオンラインの機能が使えません。'};render();return;}

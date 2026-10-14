@@ -213,3 +213,12 @@ textarea.post-in{height:110px;font-family:var(--font-body);font-size:15px;resize
 .ev-main b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ev-cd{font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
 .ev-cd.hot{color:var(--accent)}
+
+/* ルール・規約 */
+.doc-sec h3{margin-bottom:6px}
+.doc-sec p{margin:0 0 6px;line-height:1.8}
+.doc-sec ul{margin:0;padding-left:1.3em;line-height:1.8}
+.doc-sec li{margin-bottom:4px}
+.link{border:0;background:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;font-size:inherit}
+.agree{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.7}
+.agree input{width:20px;height:20px;margin-top:2px;flex-shrink:0;accent-color:var(--accent)}
