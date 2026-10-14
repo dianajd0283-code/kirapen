@@ -487,7 +487,8 @@ function vCal(){
     h+='<button type="button" class="cal-d'+(ds===today?' today':'')+(ds===sel?' sel':'')+'" data-act="cal-day" data-v="'+ds+'" aria-label="'+(m+1)+'月'+d+'日'+(evs.length?' 予定'+evs.length+'件':'')+'"><span>'+d+'</span><i>'+evs.slice(0,3).map(function(e){return '<em style="background:'+(e.oshi?oshiColor(e.oshi):'var(--accent)')+'"></em>';}).join('')+'</i></button>';}
   h+='</div></div>';
   var list=eventsOn(sel);
-  h+='<div class="stack"><div class="row between"><h3>'+mdTxt(sel)+'</h3><button class="mini" type="button" data-act="ev-new" data-v="'+sel+'">この日に追加</button></div>';
+  h+='<p class="small muted" style="margin:-8px 0 0;text-align:center">日付をタップすると、その日に予定を追加できます</p>';
+  h+='<div class="stack" id="day-list" style="scroll-margin-top:16px"><div class="row between"><h3>'+mdTxt(sel)+'</h3><button class="btn primary sm" type="button" data-act="ev-new" data-v="'+sel+'">＋ この日に追加</button></div>';
   h+=list.length?list.map(function(e){return evRow(e,null);}).join(''):'<p class="small muted" style="margin:0">この日の予定はありません。</p>';
   h+='</div>';
   var up=upcoming(8);
@@ -624,7 +625,9 @@ function act(a,d){
       window.KC.deleteAccount().then(function(){UI.delAcct=0;try{localStorage.removeItem('kirapen-v1');}catch(e){}S=newState();saveLocal();UI.step=0;UI.tab='room';render();window.scrollTo(0,0);toast('アカウントを削除しました');},function(e){UI.delAcct=1;render();toast(window.KC.message(e));});break;
     case 'theme':S.room.theme=v;save();render();break;
     case 'cal-month':UI.calMonth+=Number(v);render();break;
-    case 'cal-day':UI.calDay=v;render();break;
+    case 'cal-day':var had=UI.calDay===v,evs0=eventsOn(v);UI.calDay=v;
+      if(had||!evs0.length){act('ev-new',{v:v});break;}
+      render();var dl=document.getElementById('day-list');if(dl)dl.scrollIntoView({behavior:'smooth',block:'start'});break;
     case 'ev-new':UI.ev={id:null,title:'',kind:'live',date:v||UI.calDay||todayStr(),time:'',oshi:S.oshis[0]?S.oshis[0].name:'',memo:''};UI.evDel=false;UI.sheet='ev';render();setTimeout(function(){var x=document.getElementById('ev-title');if(x)x.focus();},50);break;
     case 'ev-edit':var ee=S.events.filter(function(x){return x.id===v;})[0];if(!ee)return;UI.ev=JSON.parse(JSON.stringify(ee));UI.ev.time=UI.ev.time||'';UI.ev.memo=UI.ev.memo||'';UI.ev.oshi=UI.ev.oshi||'';UI.evDel=false;UI.sheet='ev';render();break;
     case 'ev-close':UI.sheet=null;render();break;
